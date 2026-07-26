@@ -41,6 +41,11 @@ For the target folder (defaults to the current directory), this:
   `AGENTS.md` and `.github/copilot-instructions.md` are thin pointer files back to it, so there's
   nothing to keep in sync across three copies.
 - Writes `.gitignore` (merging in only missing lines if one already exists).
+- Writes `tools-docker-compose.yml` into the project (sonarqube + postgres, semgrep-mcp, trivy,
+  trivy-mcp), then starts that stack if it isn't already running, before wiring up any MCP config
+  below. Uses the same `container_name`s and compose project name as the shared stack from
+  `aeco machine-setup`, so if that's already up this is a no-op rather than a conflicting second
+  copy.
 - Detects (and can install) `codebase-memory-mcp`; wires up `.mcp.json` / `.codex/config.toml` /
   `.vscode/mcp.json` with the same MCP server set: `codebase-memory-mcp`, `sonarqube`, `semgrep`,
   `trivy`, `github`.

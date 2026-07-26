@@ -3,6 +3,7 @@ import path from "node:path";
 import os from "node:os";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { writeManaged } from "./file-writer.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TEMPLATE_PATH = path.join(
@@ -11,6 +12,13 @@ const TEMPLATE_PATH = path.join(
   "..",
   "templates",
   "docker-compose.mcp-tools.yml.template"
+);
+const TOOLS_TEMPLATE_PATH = path.join(
+  __dirname,
+  "..",
+  "..",
+  "templates",
+  "tools-docker-compose.yml.template"
 );
 
 export const STACK_DIR = path.join(os.homedir(), ".agentic-ecosystem");
@@ -55,4 +63,55 @@ export function stackStatus() {
   } catch {
     return null;
   }
+}
+
+/** Writes/updates the project-local tools-docker-compose.yml (sonarqube/semgrep/trivy). */
+export async function ensureToolsComposeFile(targetFolder) {
+  const template = fs.readFileSync(TOOLS_TEMPLATE_PATH, "utf8");
+  const rendered = template.replaceAll("{{PROJECT_DIR}}", toComposePath(targetFolder));
+  const targetPath = path.join(targetFolder, "tools-docker-compose.yml");
+  const status = await writeManaged(targetPath, rendered);
+  return { path: targetPath, status };
+}
+
+/** All services declared in the compose file, per `docker compose config`. */
+export function toolsStackDeclaredServices(composePath) {
+  try {
+    const output = execFileSync("docker", ["compose", "-f", composePath, "config", "--services"], {
+      encoding: "utf8",
+      shell: true,
+    });
+    return output.trim().split("\n").filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+/** Services from the compose file that are currently running (matched by compose project name, not file path). */
+export function toolsStackRunningServices(composePath) {
+  try {
+    const output = execFileSync(
+      "docker",
+      ["compose", "-f", composePath, "ps", "--services", "--filter", "status=running"],
+      { encoding: "utf8", shell: true }
+    );
+    return output.trim().split("\n").filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+/** True only if every declared service is already running. */
+export function toolsStackFullyRunning(composePath) {
+  const declared = toolsStackDeclaredServices(composePath);
+  if (declared.length === 0) return false;
+  const running = new Set(toolsStackRunningServices(composePath));
+  return declared.every((service) => running.has(service));
+}
+
+export function startToolsStack(composePath) {
+  execFileSync("docker", ["compose", "-f", composePath, "up", "-d"], {
+    stdio: "inherit",
+    shell: true,
+  });
 }

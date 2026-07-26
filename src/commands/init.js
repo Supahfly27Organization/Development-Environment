@@ -26,7 +26,12 @@ import {
   installCodebaseMemoryMcp,
   isWindows,
 } from "../lib/codebase-memory-mcp.js";
-import { dockerAvailable } from "../lib/docker-stack.js";
+import {
+  dockerAvailable,
+  ensureToolsComposeFile,
+  toolsStackFullyRunning,
+  startToolsStack,
+} from "../lib/docker-stack.js";
 
 function gitInitialized(dir) {
   return fs.existsSync(path.join(dir, ".git"));
@@ -130,7 +135,24 @@ export async function runInit({ targetFolder: cliTarget }) {
   const gitignoreResult = ensureGitignore(targetFolder);
   track(summary, ".gitignore", gitignoreResult.status);
 
-  // 5. codebase-memory-mcp
+  // 5. Project-local Docker tools stack (sonarqube/semgrep/trivy) - set up before wiring MCP config below
+  if (dockerAvailable()) {
+    const toolsCompose = await ensureToolsComposeFile(targetFolder);
+    track(summary, "tools-docker-compose.yml", toolsCompose.status);
+
+    if (toolsStackFullyRunning(toolsCompose.path)) {
+      summary.created.push("mcp-tools Docker stack already running");
+    } else {
+      startToolsStack(toolsCompose.path);
+      summary.created.push("mcp-tools Docker stack started (sonarqube/semgrep/trivy)");
+    }
+  } else {
+    summary.manual.push(
+      "Docker isn't available — tools-docker-compose.yml was not started. Install Docker, then run `docker compose -f tools-docker-compose.yml up -d` yourself."
+    );
+  }
+
+  // 6. codebase-memory-mcp
   let codebaseMemoryMcpPath = detectCodebaseMemoryMcp();
   if (!codebaseMemoryMcpPath) {
     const cbmStep = await ensureDependency({
@@ -149,7 +171,7 @@ export async function runInit({ targetFolder: cliTarget }) {
     track(summary, "codebase-memory-mcp", cbmStep.status);
   }
 
-  // 6. MCP servers + per-tool config
+  // 7. MCP servers + per-tool config
   const servers = buildServerDefs({ codebaseMemoryMcpPath });
 
   if (answers.tools.includes("claude")) {
@@ -187,13 +209,6 @@ export async function runInit({ targetFolder: cliTarget }) {
       toVscodeMcpJson(servers)
     );
     track(summary, ".vscode/mcp.json", vscodeStatus);
-  }
-
-  // 7. Docker-backed MCP tools (semgrep/trivy/sonarqube) - infra, not per-project
-  if (!dockerAvailable()) {
-    summary.manual.push(
-      "Docker isn't available — semgrep/trivy/sonarqube MCP servers won't work until Docker is installed and `aeco machine-setup` has been run."
-    );
   }
 
   // 8. secrets

@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import path from "node:path";
 
 // Marketplace/plugin names confirmed from each repo's .claude-plugin/marketplace.json.
 const PLUGINS = [
@@ -58,18 +59,43 @@ export function installProjectPlugins(cwd) {
   }
 }
 
-/** True only if both plugins already show as enabled for this project. */
+function normalizePath(p) {
+  return path.resolve(p).replace(/\\/g, "/").toLowerCase();
+}
+
+/**
+ * True only if both plugins show as enabled at *project* scope for this exact
+ * folder. `claude plugin list` is global across every project on the machine
+ * (each entry carries its own `projectPath`), so a plain substring match on
+ * the plugin id isn't enough - verified against real `--json` output:
+ * `claude plugin list --enabled` doesn't exist (errors: "unknown option"),
+ * the real flag is `--json`.
+ */
 export function projectPluginsInstalled(cwd) {
+  let entries;
   try {
-    const out = execFileSync("claude", ["plugin", "list", "--enabled"], {
+    const out = execFileSync("claude", ["plugin", "list", "--json"], {
       cwd,
       encoding: "utf8",
       shell: true,
     });
-    return PLUGINS.every((entry) => out.includes(`${entry.plugin}@${entry.marketplaceName}`));
+    entries = JSON.parse(out);
   } catch {
     return false;
   }
+
+  const target = normalizePath(cwd);
+  return PLUGINS.every((entry) => {
+    const id = `${entry.plugin}@${entry.marketplaceName}`;
+    return entries.some(
+      (e) =>
+        e.id === id &&
+        e.enabled === true &&
+        e.scope === "project" &&
+        e.projectPath &&
+        normalizePath(e.projectPath) === target
+    );
+  });
 }
 
 export { PLUGINS };

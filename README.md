@@ -37,8 +37,9 @@ For the target folder (defaults to the current directory), this:
 - `git init`s if there's no repo yet.
 - Copies `skills/` from both source repos into `.agents/skills/` — auto-discovered by both Codex
   and GitHub Copilot natively (same `SKILL.md` format Claude Code uses).
-- Generates `CLAUDE.md`, `AGENTS.md`, and `.github/copilot-instructions.md` from one shared
-  template, so all three tools see the same working rules and project context.
+- Generates `CLAUDE.md` as the single source of truth for working rules and project context.
+  `AGENTS.md` and `.github/copilot-instructions.md` are thin pointer files back to it, so there's
+  nothing to keep in sync across three copies.
 - Writes `.gitignore` (merging in only missing lines if one already exists).
 - Detects (and can install) `codebase-memory-mcp`; wires up `.mcp.json` / `.codex/config.toml` /
   `.vscode/mcp.json` with the same MCP server set: `codebase-memory-mcp`, `sonarqube`, `semgrep`,
@@ -52,9 +53,28 @@ For the target folder (defaults to the current directory), this:
 Every generated file uses the same rule: if it doesn't exist, create it; if it exists and is
 identical, do nothing; if it exists and differs, ask before touching it.
 
+## Testing
+
+```
+npm test
+```
+
+Runs the automated suite (Node's built-in test runner, no extra dependency) covering the MCP
+server renderers, `.gitignore` merge logic, `writeManaged`'s create/unchanged paths, and the
+CLAUDE.md-canonical instruction file generation. The Claude Code plugin-detection logic
+(`projectPluginsInstalled`) shells out to the real `claude` CLI and is verified manually rather
+than in the automated suite, since it's an integration point with an external tool.
+
 ## Notes
 
+- **Requires a native console.** `aeco machine-setup` and `aeco init` are interactive and need a
+  real TTY. Git Bash / MinTTY on Windows doesn't expose one for raw-mode input, so both commands
+  detect that and print a message telling you to use PowerShell, Windows Terminal, or cmd.exe
+  instead of crashing.
 - `codebase-memory-mcp` auto-install is Windows-only (downloads the latest release from
   `DeusData/codebase-memory-mcp`). On other platforms you'll be asked to install it manually.
 - The Docker-backed MCP servers (`semgrep`, `trivy`, `sonarqube`) are machine-level infrastructure
   set up once via `aeco machine-setup`, not per-project.
+- Claude Code plugin state (`claude plugin list`) is global across every project on the machine —
+  each entry is tagged with its own `projectPath`, so this tool checks that field rather than just
+  the plugin name when deciding whether a project already has both plugins installed.

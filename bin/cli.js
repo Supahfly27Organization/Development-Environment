@@ -4,7 +4,25 @@ import { runInit } from "../src/commands/init.js";
 
 const [, , subcommand, ...rest] = process.argv;
 
+const INTERACTIVE_COMMANDS = new Set(["machine-setup", "init"]);
+
+function requireRealTty() {
+  if (process.stdin.isTTY && process.stdout.isTTY) return;
+  console.error(
+    `aeco ${subcommand} needs an interactive terminal (it asks questions as it goes).\n` +
+      "This shell isn't providing one - this is a known limitation of Git Bash / MinTTY on Windows,\n" +
+      "which doesn't expose a real console handle for raw-mode input.\n\n" +
+      "Run this command from a native console instead: PowerShell.exe, Windows Terminal, or cmd.exe\n" +
+      "(not Git Bash - its prompt usually looks like `user@host MINGW64 ~`)."
+  );
+  process.exit(1);
+}
+
 async function main() {
+  if (INTERACTIVE_COMMANDS.has(subcommand)) {
+    requireRealTty();
+  }
+
   switch (subcommand) {
     case "machine-setup":
       await runMachineSetup();

@@ -41,3 +41,36 @@ test("CLAUDE.md is written even when only codex/copilot are selected, since they
   assert.ok(fs.existsSync(path.join(dir, "CLAUDE.md")));
   assert.equal(results.claude, "created");
 });
+
+test("CLAUDE.md references the four docs/claude reference docs, and all four are written", async () => {
+  const dir = makeScratchDir();
+  const results = await generateInstructionFiles(dir, answers, ["claude"]);
+  const content = fs.readFileSync(path.join(dir, "CLAUDE.md"), "utf8");
+  for (const file of [
+    "04_DOMAIN_MODEL.md",
+    "05_PATTERNS.md",
+    "06_SCANNING_TOOLS.md",
+    "07_KNOWLEDGE_TOOLS.md",
+  ]) {
+    assert.match(content, new RegExp(`docs/claude/${file}`));
+    assert.ok(fs.existsSync(path.join(dir, "docs", "claude", file)), `${file} should be written`);
+    assert.equal(results.claudeDocs[file], "created");
+  }
+});
+
+test("docs/claude reference docs contain no leftover UpFront-specific content", async () => {
+  const dir = makeScratchDir();
+  await generateInstructionFiles(dir, answers, ["claude"]);
+  for (const file of ["04_DOMAIN_MODEL.md", "05_PATTERNS.md", "06_SCANNING_TOOLS.md", "07_KNOWLEDGE_TOOLS.md"]) {
+    const content = fs.readFileSync(path.join(dir, "docs", "claude", file), "utf8");
+    assert.doesNotMatch(content, /UpFront/i);
+  }
+});
+
+test("CLAUDE.md's Local DB Defaults section is present with no filled-in values", async () => {
+  const dir = makeScratchDir();
+  await generateInstructionFiles(dir, answers, ["claude"]);
+  const content = fs.readFileSync(path.join(dir, "CLAUDE.md"), "utf8");
+  assert.match(content, /## Local DB Defaults/);
+  assert.doesNotMatch(content, /Host=localhost/);
+});

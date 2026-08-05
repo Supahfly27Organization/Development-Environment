@@ -133,7 +133,12 @@ export async function runInit({ targetFolder: cliTarget }) {
   // 3. instruction files
   const fileResults = await generateInstructionFiles(targetFolder, answers, answers.tools);
   for (const [tool, status] of Object.entries(fileResults)) {
+    if (tool === "claudeDocs") continue;
     track(summary, `${tool} instructions file`, status);
+  }
+  if (fileResults.claudeDocs) {
+    const docCount = Object.keys(fileResults.claudeDocs).length;
+    summary.created.push(`docs/claude/ (${docCount} reference docs)`);
   }
 
   // 4. .gitignore

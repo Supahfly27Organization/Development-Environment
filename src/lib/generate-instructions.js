@@ -5,6 +5,13 @@ import { writeManaged } from "./file-writer.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const BODY_TEMPLATE_PATH = path.join(__dirname, "..", "..", "templates", "instructions-body.template.md");
+const CLAUDE_DOCS_DIR = path.join(__dirname, "..", "..", "templates", "claude-docs");
+const CLAUDE_DOCS_FILES = [
+  "04_DOMAIN_MODEL.md",
+  "05_PATTERNS.md",
+  "06_SCANNING_TOOLS.md",
+  "07_KNOWLEDGE_TOOLS.md",
+];
 
 function renderBody({ projectName, description, techStack }) {
   const template = fs.readFileSync(BODY_TEMPLATE_PATH, "utf8");
@@ -27,6 +34,17 @@ export async function generateInstructionFiles(targetFolder, answers, tools) {
   // (Codex/Copilot's own files point back to it).
   const claudeContent = `# CLAUDE.md\n\n${body}\n`;
   results.claude = await writeManaged(path.join(targetFolder, "CLAUDE.md"), claudeContent);
+
+  // Reference docs CLAUDE.md's "Deeper Context" section links to - written alongside it
+  // regardless of which tools are selected, same rationale as CLAUDE.md itself.
+  results.claudeDocs = {};
+  for (const file of CLAUDE_DOCS_FILES) {
+    const content = fs.readFileSync(path.join(CLAUDE_DOCS_DIR, file), "utf8");
+    results.claudeDocs[file] = await writeManaged(
+      path.join(targetFolder, "docs", "claude", file),
+      content
+    );
+  }
 
   if (tools.includes("codex")) {
     const content = `# AGENTS.md\n\nThis project's working rules and context live in [CLAUDE.md](./CLAUDE.md) — read that file for the full instructions.\n\n<!-- Codex-specific notes go here. Skills live in .agents/skills/. -->\n`;

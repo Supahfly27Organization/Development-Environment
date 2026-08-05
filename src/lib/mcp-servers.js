@@ -7,8 +7,10 @@
  * @param {string|null} opts.codebaseMemoryMcpPath - absolute path to the local
  *        codebase-memory-mcp binary, or null if it isn't installed/skipped.
  * @param {string} [opts.sonarHostUrl]
+ * @param {string} [opts.projectPath] - absolute path to the target project, passed to
+ *        serena's `--project` flag. Defaults to the current working directory.
  */
-export function buildServerDefs({ codebaseMemoryMcpPath, sonarHostUrl }) {
+export function buildServerDefs({ codebaseMemoryMcpPath, sonarHostUrl, projectPath }) {
   const servers = {};
 
   if (codebaseMemoryMcpPath) {
@@ -37,6 +39,21 @@ export function buildServerDefs({ codebaseMemoryMcpPath, sonarHostUrl }) {
     command: "docker",
     args: ["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN", "ghcr.io/github/github-mcp-server"],
     env: { GITHUB_PERSONAL_ACCESS_TOKEN: "${GITHUB_TOKEN}" },
+  };
+
+  servers["serena"] = {
+    command: "uvx",
+    args: [
+      "--from",
+      "git+https://github.com/oraios/serena",
+      "serena",
+      "start-mcp-server",
+      "--context",
+      "ide-assistant",
+      "--project",
+      projectPath ?? process.cwd(),
+    ],
+    env: {},
   };
 
   return servers;

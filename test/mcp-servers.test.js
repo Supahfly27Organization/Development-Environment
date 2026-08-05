@@ -14,11 +14,26 @@ test("buildServerDefs omits codebase-memory-mcp when no path is given", () => {
   assert.ok(servers.semgrep);
   assert.ok(servers.trivy);
   assert.ok(servers.github);
+  assert.ok(servers.serena);
 });
 
 test("buildServerDefs includes codebase-memory-mcp when a path is given", () => {
   const servers = buildServerDefs({ codebaseMemoryMcpPath: "C:\\fake\\cbm.exe" });
   assert.equal(servers["codebase-memory-mcp"].command, "C:\\fake\\cbm.exe");
+});
+
+test("buildServerDefs wires serena's --project flag to the given projectPath", () => {
+  const servers = buildServerDefs({ codebaseMemoryMcpPath: null, projectPath: "F:\\fake\\project" });
+  assert.equal(servers.serena.command, "uvx");
+  assert.ok(servers.serena.args.includes("git+https://github.com/oraios/serena"));
+  const idx = servers.serena.args.indexOf("--project");
+  assert.equal(servers.serena.args[idx + 1], "F:\\fake\\project");
+});
+
+test("buildServerDefs defaults serena's --project flag to cwd when projectPath is omitted", () => {
+  const servers = buildServerDefs({ codebaseMemoryMcpPath: null });
+  const idx = servers.serena.args.indexOf("--project");
+  assert.equal(servers.serena.args[idx + 1], process.cwd());
 });
 
 test("toClaudeMcpJson produces valid, parseable JSON with an mcpServers key", () => {

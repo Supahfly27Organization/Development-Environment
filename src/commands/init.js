@@ -177,7 +177,7 @@ export async function runInit({ targetFolder: cliTarget }) {
   }
 
   // 7. MCP servers + per-tool config
-  const servers = buildServerDefs({ codebaseMemoryMcpPath });
+  const servers = buildServerDefs({ codebaseMemoryMcpPath, projectPath: targetFolder });
 
   if (answers.tools.includes("claude")) {
     const mcpStatus = await writeManaged(path.join(targetFolder, ".mcp.json"), toClaudeMcpJson(servers));

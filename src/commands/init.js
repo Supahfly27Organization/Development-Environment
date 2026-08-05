@@ -15,6 +15,11 @@ import {
   copySkillsIntoProject,
 } from "../lib/skills.js";
 import {
+  copyIssueTemplates,
+  copyIssueWorkflowSkills,
+  addGithubWorkflowHook,
+} from "../lib/github-issue-workflow.js";
+import {
   claudeCliAvailable,
   installProjectPlugins,
   projectPluginsInstalled,
@@ -195,6 +200,21 @@ export async function runInit({ targetFolder: cliTarget }) {
       track(summary, "Claude Code plugins", pluginStep.status);
     } else {
       summary.manual.push("Claude Code CLI not found on PATH — install plugins manually once it's set up.");
+    }
+
+    if (answers.wantsGithubIssueWorkflow) {
+      const templateResults = await copyIssueTemplates(targetFolder);
+      const templateCount = Object.keys(templateResults).length;
+      summary.created.push(`.github/ISSUE_TEMPLATE/ (${templateCount} issue forms: epic, user_story, bug)`);
+
+      const skillResults = await copyIssueWorkflowSkills(targetFolder);
+      const skillCount = Object.keys(skillResults).length;
+      summary.created.push(
+        `.claude/skills/github-issue-{sync,start,commit}/ (${skillCount} skills)`
+      );
+
+      const hookStatus = addGithubWorkflowHook(targetFolder);
+      track(summary, ".claude/settings.json GitHub issue workflow SessionStart hook", hookStatus);
     }
   }
 

@@ -56,6 +56,17 @@ export async function collectInitAnswers(defaultTarget) {
     })
   );
 
+  let wantsGithubIssueWorkflow = false;
+  if (tools.includes("claude")) {
+    wantsGithubIssueWorkflow = bail(
+      await p.confirm({
+        message:
+          "Set up the GitHub issue workflow (Epic/User Story/Bug issue templates + github-issue-sync/start/commit skills)?",
+        initialValue: true,
+      })
+    );
+  }
+
   return {
     targetFolder: String(targetFolder),
     projectName: String(projectName),
@@ -63,5 +74,6 @@ export async function collectInitAnswers(defaultTarget) {
     techStack: String(techStack ?? ""),
     tools,
     wantsSecrets,
+    wantsGithubIssueWorkflow,
   };
 }

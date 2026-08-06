@@ -8,12 +8,12 @@ import {
 
 // ── archive name selection (pure logic, no I/O) ───────────────────────────────
 
-test("archiveNameForVariant returns standard archive by default", () => {
+test("archiveNameForVariant returns windows-amd64 standard archive by default", () => {
   assert.equal(archiveNameForVariant(), "codebase-memory-mcp-windows-amd64.zip");
   assert.equal(archiveNameForVariant(false), "codebase-memory-mcp-windows-amd64.zip");
 });
 
-test("archiveNameForVariant returns ui archive when ui=true", () => {
+test("archiveNameForVariant returns windows-amd64 ui archive when ui=true", () => {
   assert.equal(archiveNameForVariant(true), "codebase-memory-mcp-ui-windows-amd64.zip");
 });
 

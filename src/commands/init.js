@@ -153,8 +153,14 @@ export async function runInit({ targetFolder: cliTarget }) {
     if (toolsStackFullyRunning(toolsCompose.path)) {
       summary.created.push("mcp-tools Docker stack already running");
     } else {
-      startToolsStack(toolsCompose.path);
-      summary.created.push("mcp-tools Docker stack started (sonarqube/semgrep/trivy)");
+      const result = startToolsStack(toolsCompose.path);
+      if (result.ok) {
+        summary.created.push("mcp-tools Docker stack started (sonarqube/semgrep/trivy)");
+      } else {
+        summary.manual.push(
+          `mcp-tools Docker stack failed to start (a port may already be in use — check the output above). Fix the conflict then run: docker compose -f "${toolsCompose.path}" up -d`
+        );
+      }
     }
   } else {
     summary.manual.push(

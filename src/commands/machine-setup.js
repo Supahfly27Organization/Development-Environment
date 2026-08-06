@@ -29,8 +29,14 @@ export async function runMachineSetup() {
         initialValue: true,
       });
       if (!p.isCancel(proceed) && proceed) {
-        startStack();
-        p.log.success(`mcp-tools stack starting. Check status with: docker compose -f "${composePath}" ps`);
+        const result = startStack();
+        if (result.ok) {
+          p.log.success(`mcp-tools stack starting. Check status with: docker compose -f "${composePath}" ps`);
+        } else {
+          p.log.warn(
+            `Docker stack failed to start (a port may already be in use — check the output above). Fix the conflict then run: docker compose -f "${composePath}" up -d`
+          );
+        }
       }
     }
   } else {

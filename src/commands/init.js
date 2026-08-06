@@ -37,6 +37,7 @@ import {
   toolsStackFullyRunning,
   startToolsStack,
 } from "../lib/docker-stack.js";
+import { resolveTargetFolder } from "../lib/target-path.js";
 
 function gitInitialized(dir) {
   return fs.existsSync(path.join(dir, ".git"));
@@ -89,7 +90,7 @@ export async function runInit({ targetFolder: cliTarget }) {
   p.intro("Agentic Ecosystem — project bootstrap");
 
   const answers = await collectInitAnswers(cliTarget ?? process.cwd());
-  const targetFolder = path.resolve(answers.targetFolder);
+  const targetFolder = resolveTargetFolder(answers.targetFolder);
   fs.mkdirSync(targetFolder, { recursive: true });
 
   const summary = { created: [], manual: [] };

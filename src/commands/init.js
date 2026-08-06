@@ -24,7 +24,7 @@ import {
   installProjectPlugins,
   projectPluginsInstalled,
 } from "../lib/claude-plugins.js";
-import { buildServerDefs, toClaudeMcpJson, toVscodeMcpJson } from "../lib/mcp-servers.js";
+import { buildServerDefs, toClaudeMcpJson, toVscodeMcpJson, uvxAvailable } from "../lib/mcp-servers.js";
 import { writeCodexConfig } from "../lib/codex-config.js";
 import {
   detectCodebaseMemoryMcp,
@@ -181,8 +181,22 @@ export async function runInit({ targetFolder: cliTarget }) {
     track(summary, "codebase-memory-mcp", cbmStep.status);
   }
 
+  // 6b. serena (requires uvx on PATH)
+  let includeSerena = uvxAvailable();
+  if (!includeSerena) {
+    const serenaStep = await ensureDependency({
+      name: "serena (uvx)",
+      detect: () => uvxAvailable(),
+      autoInstall: null,
+      manualInstructions:
+        "serena requires `uvx` (part of uv — https://github.com/astral-sh/uv). Install uv, then re-check, or skip to omit serena from the MCP config.",
+    });
+    includeSerena = serenaStep.status !== "skipped";
+    track(summary, "serena", serenaStep.status);
+  }
+
   // 7. MCP servers + per-tool config
-  const servers = buildServerDefs({ codebaseMemoryMcpPath, projectPath: targetFolder });
+  const servers = buildServerDefs({ codebaseMemoryMcpPath, projectPath: targetFolder, includeSerena });
 
   if (answers.tools.includes("claude")) {
     const mcpStatus = await writeManaged(path.join(targetFolder, ".mcp.json"), toClaudeMcpJson(servers));

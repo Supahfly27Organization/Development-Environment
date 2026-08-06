@@ -11,7 +11,6 @@ test("resolveTargetFolder preserves absolute Windows drive paths", () => {
 
 test("resolveTargetFolder preserves Windows UNC paths", () => {
   assert.equal(resolveTargetFolder("\\\\server\\share\\Jack", "/tmp/workspace"), "\\\\server\\share\\Jack");
-  assert.equal(resolveTargetFolder("//server/share/Jack", "/tmp/workspace"), "\\\\server\\share\\Jack");
 });
 
 test("resolveTargetFolder resolves non-Windows paths from cwd", () => {

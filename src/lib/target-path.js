@@ -1,7 +1,7 @@
 import path from "node:path";
 
 function isWindowsAbsolutePath(targetFolder) {
-  return /^[a-zA-Z]:[\\/]/.test(targetFolder) || /^[/\\]{2}[^/\\]+/.test(targetFolder);
+  return /^[a-zA-Z]:[\\/]/.test(targetFolder) || /^\\\\[^\\]+\\[^\\]+/.test(targetFolder);
 }
 
 export function resolveTargetFolder(targetFolder, cwd = process.cwd()) {

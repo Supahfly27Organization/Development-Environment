@@ -124,7 +124,7 @@ export async function runInit({ targetFolder: cliTarget }) {
   if (isSkillSourceCachePresent()) {
     const skillResults = await copySkillsIntoProject(targetFolder);
     summary.created.push(
-      `.agents/skills/ (${skillResults.copied.length} copied, ${skillResults.skipped.length} kept, ${skillResults.overwritten.length} overwritten)`
+      `.agents/skills/ (${skillResults.copied.length} copied, ${skillResults.skipped.length} kept, ${skillResults.overwritten.length} overwritten, ${skillResults.appended.length} appended)`
     );
   } else {
     summary.manual.push("Skipped .agents/skills/ population (no skill source cache available).");

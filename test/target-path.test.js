@@ -14,5 +14,6 @@ test("resolveTargetFolder preserves Windows UNC paths", () => {
 });
 
 test("resolveTargetFolder resolves non-Windows paths from cwd", () => {
-  assert.equal(resolveTargetFolder("project", "/tmp/workspace"), path.resolve("/tmp/workspace", "project"));
+  const cwd = path.join("tmp", "workspace");
+  assert.equal(resolveTargetFolder("project", cwd), path.resolve(cwd, "project"));
 });

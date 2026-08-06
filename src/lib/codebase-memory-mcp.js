@@ -31,8 +31,10 @@ export function detectCodebaseMemoryMcp() {
   }
 }
 
-/** Downloads + installs the latest Windows release. Throws on non-Windows platforms. */
-export async function installCodebaseMemoryMcp() {
+/** Downloads + installs the latest Windows release. Throws on non-Windows platforms.
+ * @param {{ ui?: boolean }} [options] - Pass `{ ui: true }` to install the UI (graph visualization) variant.
+ */
+export async function installCodebaseMemoryMcp({ ui = false } = {}) {
   if (!isWindows()) {
     throw new Error(
       `Automatic install is only implemented for Windows. Install manually from https://github.com/${REPO}/releases`
@@ -40,7 +42,9 @@ export async function installCodebaseMemoryMcp() {
   }
 
   const baseUrl = `https://github.com/${REPO}/releases/latest/download`;
-  const archiveName = "codebase-memory-mcp-windows-amd64.zip";
+  const archiveName = ui
+    ? "codebase-memory-mcp-ui-windows-amd64.zip"
+    : "codebase-memory-mcp-windows-amd64.zip";
   const archiveUrl = `${baseUrl}/${archiveName}`;
   const checksumUrl = `${baseUrl}/checksums.txt`;
 

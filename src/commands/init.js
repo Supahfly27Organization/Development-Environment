@@ -170,8 +170,8 @@ export async function runInit({ targetFolder: cliTarget }) {
       detect: () => Boolean(detectCodebaseMemoryMcp()),
       autoInstall: isWindows()
         ? {
-            confirmMessage: "codebase-memory-mcp isn't installed. Download and install the latest release now?",
-            install: async () => installCodebaseMemoryMcp(),
+            confirmMessage: "codebase-memory-mcp isn't installed. Download and install the latest release (with graph visualization UI) now?",
+            install: async () => installCodebaseMemoryMcp({ ui: true }),
           }
         : null,
       manualInstructions:

@@ -19,6 +19,13 @@ export function isWindows() {
   return process.platform === "win32";
 }
 
+/** Returns the release archive file name for the requested variant. */
+export function archiveNameForVariant(ui = false) {
+  return ui
+    ? "codebase-memory-mcp-ui-windows-amd64.zip"
+    : "codebase-memory-mcp-windows-amd64.zip";
+}
+
 /** Returns the absolute binary path if found, else null. */
 export function detectCodebaseMemoryMcp() {
   if (fs.existsSync(BIN_PATH)) return BIN_PATH;
@@ -42,9 +49,7 @@ export async function installCodebaseMemoryMcp({ ui = false } = {}) {
   }
 
   const baseUrl = `https://github.com/${REPO}/releases/latest/download`;
-  const archiveName = ui
-    ? "codebase-memory-mcp-ui-windows-amd64.zip"
-    : "codebase-memory-mcp-windows-amd64.zip";
+  const archiveName = archiveNameForVariant(ui);
   const archiveUrl = `${baseUrl}/${archiveName}`;
   const checksumUrl = `${baseUrl}/checksums.txt`;
 

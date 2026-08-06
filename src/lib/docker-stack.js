@@ -48,10 +48,15 @@ function toComposePath(p) {
 }
 
 export function startStack() {
-  execFileSync("docker", ["compose", "-f", COMPOSE_PATH, "up", "-d"], {
-    stdio: "inherit",
-    shell: true,
-  });
+  try {
+    execFileSync("docker", ["compose", "-f", COMPOSE_PATH, "up", "-d"], {
+      stdio: "inherit",
+      shell: true,
+    });
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error };
+  }
 }
 
 export function stackStatus() {
@@ -110,8 +115,13 @@ export function toolsStackFullyRunning(composePath) {
 }
 
 export function startToolsStack(composePath) {
-  execFileSync("docker", ["compose", "-f", composePath, "up", "-d"], {
-    stdio: "inherit",
-    shell: true,
-  });
+  try {
+    execFileSync("docker", ["compose", "-f", composePath, "up", "-d"], {
+      stdio: "inherit",
+      shell: true,
+    });
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error };
+  }
 }

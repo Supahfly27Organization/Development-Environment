@@ -14,7 +14,17 @@ test("buildServerDefs omits codebase-memory-mcp when no path is given", () => {
   assert.ok(servers.semgrep);
   assert.ok(servers.trivy);
   assert.ok(servers.github);
+});
+
+test("buildServerDefs omits serena by default (includeSerena not set)", () => {
+  const servers = buildServerDefs({ codebaseMemoryMcpPath: null });
+  assert.equal(servers.serena, undefined);
+});
+
+test("buildServerDefs includes serena when includeSerena is true", () => {
+  const servers = buildServerDefs({ codebaseMemoryMcpPath: null, includeSerena: true });
   assert.ok(servers.serena);
+  assert.equal(servers.serena.command, "uvx");
 });
 
 test("buildServerDefs includes codebase-memory-mcp when a path is given", () => {
@@ -23,7 +33,7 @@ test("buildServerDefs includes codebase-memory-mcp when a path is given", () => 
 });
 
 test("buildServerDefs wires serena's --project flag to the given projectPath", () => {
-  const servers = buildServerDefs({ codebaseMemoryMcpPath: null, projectPath: "F:\\fake\\project" });
+  const servers = buildServerDefs({ codebaseMemoryMcpPath: null, projectPath: "F:\\fake\\project", includeSerena: true });
   assert.equal(servers.serena.command, "uvx");
   assert.ok(servers.serena.args.includes("git+https://github.com/oraios/serena"));
   const idx = servers.serena.args.indexOf("--project");
@@ -31,7 +41,7 @@ test("buildServerDefs wires serena's --project flag to the given projectPath", (
 });
 
 test("buildServerDefs defaults serena's --project flag to cwd when projectPath is omitted", () => {
-  const servers = buildServerDefs({ codebaseMemoryMcpPath: null });
+  const servers = buildServerDefs({ codebaseMemoryMcpPath: null, includeSerena: true });
   const idx = servers.serena.args.indexOf("--project");
   assert.equal(servers.serena.args[idx + 1], process.cwd());
 });

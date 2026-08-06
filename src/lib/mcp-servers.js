@@ -1,6 +1,18 @@
+import { execFileSync } from "node:child_process";
+
 // Single source of truth for the MCP server set, mirrored from UpFront's
 // actual .mcp.json. Each renderer below shapes the same data for a
 // different tool's config format.
+
+/** Returns true if `uvx` is available on PATH (required to run serena). */
+export function uvxAvailable() {
+  try {
+    execFileSync("uvx", ["--version"], { stdio: "ignore", shell: true });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 /**
  * @param {object} opts
@@ -9,8 +21,10 @@
  * @param {string} [opts.sonarHostUrl]
  * @param {string} [opts.projectPath] - absolute path to the target project, passed to
  *        serena's `--project` flag. Defaults to the current working directory.
+ * @param {boolean} [opts.includeSerena] - include the serena MCP server entry. Defaults to false
+ *        so callers must explicitly opt in after confirming uvx is available.
  */
-export function buildServerDefs({ codebaseMemoryMcpPath, sonarHostUrl, projectPath }) {
+export function buildServerDefs({ codebaseMemoryMcpPath, sonarHostUrl, projectPath, includeSerena = false }) {
   const servers = {};
 
   if (codebaseMemoryMcpPath) {
@@ -41,20 +55,22 @@ export function buildServerDefs({ codebaseMemoryMcpPath, sonarHostUrl, projectPa
     env: { GITHUB_PERSONAL_ACCESS_TOKEN: "${GITHUB_TOKEN}" },
   };
 
-  servers["serena"] = {
-    command: "uvx",
-    args: [
-      "--from",
-      "git+https://github.com/oraios/serena",
-      "serena",
-      "start-mcp-server",
-      "--context",
-      "ide-assistant",
-      "--project",
-      projectPath ?? process.cwd(),
-    ],
-    env: {},
-  };
+  if (includeSerena) {
+    servers["serena"] = {
+      command: "uvx",
+      args: [
+        "--from",
+        "git+https://github.com/oraios/serena",
+        "serena",
+        "start-mcp-server",
+        "--context",
+        "ide-assistant",
+        "--project",
+        projectPath ?? process.cwd(),
+      ],
+      env: {},
+    };
+  }
 
   return servers;
 }

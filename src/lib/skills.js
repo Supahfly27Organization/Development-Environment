@@ -50,10 +50,20 @@ function listFilesRecursive(dir) {
   return files;
 }
 
+const TEXT_EXTENSIONS = new Set([
+  ".md", ".txt", ".yaml", ".yml", ".json", ".toml", ".sh", ".ps1", ".js", ".ts",
+]);
+
+/** Returns true if the file should be treated as text and handled by writeManaged. */
+function isTextFile(filePath) {
+  return TEXT_EXTENSIONS.has(path.extname(filePath).toLowerCase());
+}
+
 /**
  * Copies skills/<name>/ from both cached source repos into <targetFolder>/.agents/skills/.
- * Each file inside a skill folder is handled by writeManaged, giving the user the full
+ * Text files inside each skill folder are handled by writeManaged, giving the user the full
  * Keep / Overwrite / Append / Show diff prompt when a conflict exists.
+ * Binary files (images, compiled assets, etc.) are copied directly with fs.copyFileSync.
  *
  * @param {string} targetFolder
  * @param {{ select?: Function, sourcesDir?: string }} [deps] - Optional injectable dependencies for testing.
@@ -78,13 +88,23 @@ export async function copySkillsIntoProject(targetFolder, deps = {}) {
       for (const relFile of listFilesRecursive(srcSkillDir)) {
         const srcFile = path.join(srcSkillDir, relFile);
         const destFile = path.join(destSkillDir, relFile);
-        const content = fs.readFileSync(srcFile, "utf8");
-        const status = await writeManaged(destFile, content, deps);
 
-        if (status === "created") results.copied.push(path.join(skillName, relFile));
-        else if (status === "appended") results.appended.push(path.join(skillName, relFile));
-        else if (status === "overwritten") results.overwritten.push(path.join(skillName, relFile));
-        else results.skipped.push(path.join(skillName, relFile)); // "kept" | "unchanged"
+        if (isTextFile(relFile)) {
+          const content = fs.readFileSync(srcFile, "utf8");
+          const status = await writeManaged(destFile, content, deps);
+
+          if (status === "created") results.copied.push(path.join(skillName, relFile));
+          else if (status === "appended") results.appended.push(path.join(skillName, relFile));
+          else if (status === "overwritten") results.overwritten.push(path.join(skillName, relFile));
+          else results.skipped.push(path.join(skillName, relFile)); // "kept" | "unchanged"
+        } else {
+          // Binary file: copy directly, overwriting if present.
+          fs.mkdirSync(path.dirname(destFile), { recursive: true });
+          const isNew = !fs.existsSync(destFile);
+          fs.copyFileSync(srcFile, destFile);
+          if (isNew) results.copied.push(path.join(skillName, relFile));
+          else results.overwritten.push(path.join(skillName, relFile));
+        }
       }
     }
   }

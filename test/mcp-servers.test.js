@@ -36,6 +36,16 @@ test("buildServerDefs defaults serena's --project flag to cwd when projectPath i
   assert.equal(servers.serena.args[idx + 1], process.cwd());
 });
 
+test("buildServerDefs omits cass-memory when no cmServeUrl is given", () => {
+  const servers = buildServerDefs({ codebaseMemoryMcpPath: null });
+  assert.equal(servers["cass-memory"], undefined);
+});
+
+test("buildServerDefs includes cass-memory as a url-type server when cmServeUrl is given", () => {
+  const servers = buildServerDefs({ codebaseMemoryMcpPath: null, cmServeUrl: "http://127.0.0.1:8765/" });
+  assert.deepEqual(servers["cass-memory"], { type: "url", url: "http://127.0.0.1:8765/" });
+});
+
 test("toClaudeMcpJson produces valid, parseable JSON with an mcpServers key", () => {
   const servers = buildServerDefs({ codebaseMemoryMcpPath: null });
   const json = toClaudeMcpJson(servers);
@@ -57,4 +67,17 @@ test("toVscodeMcpJson rewrites ${VAR} env refs to VS Code's ${env:VAR} syntax", 
   const parsed = JSON.parse(json);
   assert.equal(parsed.servers.github.env.GITHUB_PERSONAL_ACCESS_TOKEN, "${env:GITHUB_TOKEN}");
   assert.equal(parsed.servers.sonarqube.env.SONAR_TOKEN, "${env:SONAR_TOKEN}");
+});
+
+test("url-type servers (cass-memory) pass through unchanged for Claude, Codex, and VS Code", () => {
+  const servers = buildServerDefs({ codebaseMemoryMcpPath: null, cmServeUrl: "http://127.0.0.1:8765/" });
+
+  const claude = JSON.parse(toClaudeMcpJson(servers));
+  assert.deepEqual(claude.mcpServers["cass-memory"], { type: "url", url: "http://127.0.0.1:8765/" });
+
+  const codex = toCodexMcpServersTable(servers);
+  assert.deepEqual(codex["cass-memory"], { type: "url", url: "http://127.0.0.1:8765/" });
+
+  const vscode = JSON.parse(toVscodeMcpJson(servers));
+  assert.deepEqual(vscode.servers["cass-memory"], { type: "url", url: "http://127.0.0.1:8765/" });
 });

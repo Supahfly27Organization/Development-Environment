@@ -9,12 +9,18 @@
  * @param {string} [opts.sonarHostUrl]
  * @param {string} [opts.projectPath] - absolute path to the target project, passed to
  *        serena's `--project` flag. Defaults to the current working directory.
+ * @param {string|null} [opts.cmServeUrl] - URL of a reachable `cm serve` (CASS Memory
+ *        System) MCP HTTP endpoint, or null/omitted if it isn't installed/running.
  */
-export function buildServerDefs({ codebaseMemoryMcpPath, sonarHostUrl, projectPath }) {
+export function buildServerDefs({ codebaseMemoryMcpPath, sonarHostUrl, projectPath, cmServeUrl }) {
   const servers = {};
 
   if (codebaseMemoryMcpPath) {
     servers["codebase-memory-mcp"] = { command: codebaseMemoryMcpPath, args: [], env: {} };
+  }
+
+  if (cmServeUrl) {
+    servers["cass-memory"] = { type: "url", url: cmServeUrl };
   }
 
   servers["sonarqube"] = {
@@ -60,6 +66,9 @@ export function buildServerDefs({ codebaseMemoryMcpPath, sonarHostUrl, projectPa
 }
 
 function stripEmpty(def) {
+  if (def.type === "url") {
+    return { type: "url", url: def.url };
+  }
   const out = { command: def.command };
   if (def.args?.length) out.args = def.args;
   if (Object.keys(def.env ?? {}).length) out.env = def.env;

@@ -31,8 +31,17 @@ export function detectCodebaseMemoryMcp() {
   }
 }
 
-/** Downloads + installs the latest Windows release. Throws on non-Windows platforms. */
-export async function installCodebaseMemoryMcp() {
+/** Name of the release archive for the standard (ui=false) or UI-enabled (ui=true) Windows build. */
+export function archiveNameForVariant(ui = false) {
+  return ui ? "codebase-memory-mcp-ui-windows-amd64.zip" : "codebase-memory-mcp-windows-amd64.zip";
+}
+
+/**
+ * Downloads + installs the latest Windows release. Throws on non-Windows platforms.
+ * @param {object} [opts]
+ * @param {boolean} [opts.ui] - install the UI-enabled build instead of the standard one.
+ */
+export async function installCodebaseMemoryMcp({ ui = false } = {}) {
   if (!isWindows()) {
     throw new Error(
       `Automatic install is only implemented for Windows. Install manually from https://github.com/${REPO}/releases`
@@ -40,7 +49,7 @@ export async function installCodebaseMemoryMcp() {
   }
 
   const baseUrl = `https://github.com/${REPO}/releases/latest/download`;
-  const archiveName = "codebase-memory-mcp-windows-amd64.zip";
+  const archiveName = archiveNameForVariant(ui);
   const archiveUrl = `${baseUrl}/${archiveName}`;
   const checksumUrl = `${baseUrl}/checksums.txt`;
 

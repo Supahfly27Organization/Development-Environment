@@ -32,6 +32,16 @@ import {
   isWindows,
 } from "../lib/codebase-memory-mcp.js";
 import {
+  detectCm,
+  installCm,
+  isCmInitialized,
+  initCm,
+  isCmServeRunning,
+  startCmServe,
+  addCmReflectHook,
+  CM_SERVE_URL,
+} from "../lib/cass-memory-system.js";
+import {
   dockerAvailable,
   ensureToolsComposeFile,
   toolsStackFullyRunning,
@@ -124,7 +134,8 @@ export async function runInit({ targetFolder: cliTarget }) {
   if (isSkillSourceCachePresent()) {
     const skillResults = await copySkillsIntoProject(targetFolder);
     summary.created.push(
-      `.agents/skills/ (${skillResults.copied.length} copied, ${skillResults.skipped.length} kept, ${skillResults.overwritten.length} overwritten)`
+      `.agents/skills/ (${skillResults.copied.length} copied, ${skillResults.skipped.length} kept, ` +
+        `${skillResults.overwritten.length} overwritten, ${skillResults.appended.length} appended)`
     );
   } else {
     summary.manual.push("Skipped .agents/skills/ population (no skill source cache available).");
@@ -181,14 +192,75 @@ export async function runInit({ targetFolder: cliTarget }) {
     track(summary, "codebase-memory-mcp", cbmStep.status);
   }
 
+  // 6b. CASS Memory System (cm) - procedural memory CLI
+  let cmPath = detectCm();
+  if (!cmPath) {
+    const cmStep = await ensureDependency({
+      name: "CASS Memory System (cm)",
+      detect: () => Boolean(detectCm()),
+      autoInstall: {
+        confirmMessage: isWindows()
+          ? "CASS Memory System (cm) isn't installed. Install it now via Scoop?"
+          : "CASS Memory System (cm) isn't installed. Install it now via the official install script?",
+        install: async () => installCm(),
+      },
+      manualInstructions:
+        "Install manually: Windows via Scoop (`scoop bucket add dicklesworthstone " +
+        "https://github.com/Dicklesworthstone/scoop-bucket` then `scoop install dicklesworthstone/cm`), " +
+        "or macOS/Linux via `curl -fsSL " +
+        "https://raw.githubusercontent.com/Dicklesworthstone/cass_memory_system/main/install.sh | " +
+        "bash -s -- --easy-mode --verify`.",
+    });
+    cmPath = detectCm();
+    track(summary, "CASS Memory System (cm)", cmStep.status);
+  }
+
+  let cmServeUrl = null;
+  if (cmPath) {
+    if (!isCmInitialized()) {
+      const cmInitStep = await ensureDependency({
+        name: "cm init",
+        detect: () => isCmInitialized(),
+        autoInstall: {
+          confirmMessage: "Run `cm init` to set up CASS Memory System configuration now?",
+          install: async () => initCm(cmPath),
+        },
+        manualInstructions: "Run `cm init` yourself once you're ready.",
+      });
+      track(summary, "cm init", cmInitStep.status);
+    }
+
+    if (await isCmServeRunning()) {
+      cmServeUrl = CM_SERVE_URL;
+      summary.created.push("cm serve already running");
+    } else {
+      const cmServeStep = await ensureDependency({
+        name: "cm serve (MCP HTTP server)",
+        detect: () => isCmServeRunning(),
+        autoInstall: {
+          confirmMessage: `Start \`cm serve\` in the background now (listens on ${CM_SERVE_URL})?`,
+          install: async () => startCmServe(cmPath),
+        },
+        manualInstructions: `Run \`cm serve\` yourself so the MCP server is reachable at ${CM_SERVE_URL}.`,
+      });
+      if (cmServeStep.status !== "skipped") cmServeUrl = CM_SERVE_URL;
+      track(summary, "cm serve", cmServeStep.status);
+    }
+  }
+
   // 7. MCP servers + per-tool config
-  const servers = buildServerDefs({ codebaseMemoryMcpPath, projectPath: targetFolder });
+  const servers = buildServerDefs({ codebaseMemoryMcpPath, projectPath: targetFolder, cmServeUrl });
 
   if (answers.tools.includes("claude")) {
     const mcpStatus = await writeManaged(path.join(targetFolder, ".mcp.json"), toClaudeMcpJson(servers));
     track(summary, "Claude .mcp.json", mcpStatus);
     await writeClaudeSettings(targetFolder);
     summary.created.push(".claude/settings.json (marketplaces + enabledPlugins)");
+
+    if (cmPath) {
+      const cmHookStatus = addCmReflectHook(targetFolder);
+      track(summary, ".claude/hooks.json (cm reflect post-session hook)", cmHookStatus);
+    }
 
     if (claudeCliAvailable()) {
       const pluginStep = await ensureDependency({

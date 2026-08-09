@@ -13,8 +13,8 @@ const SKILL_SOURCES = [
   { name: "product-superpowers", repo: "https://github.com/guhcostan/product-superpowers.git" },
 ];
 
-export function cacheDirFor(sourceName) {
-  return path.join(SOURCES_DIR, sourceName);
+export function cacheDirFor(sourceName, sourcesDir = SOURCES_DIR) {
+  return path.join(sourcesDir, sourceName);
 }
 
 export function isSkillSourceCachePresent() {
@@ -34,42 +34,90 @@ export function updateSkillSourceCache() {
   }
 }
 
-/** Copies skills/<name>/ from both cached source repos into <targetFolder>/.agents/skills/. */
-export async function copySkillsIntoProject(targetFolder) {
+/** Recursively lists files under `dir`, as POSIX-style paths relative to `dir`. */
+function listFilesRecursive(dir) {
+  const out = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      out.push(...listFilesRecursive(full).map((f) => path.posix.join(entry.name, f)));
+    } else if (entry.isFile()) {
+      out.push(entry.name);
+    }
+  }
+  return out;
+}
+
+/**
+ * Copies skills/<name>/ from both cached source repos into <targetFolder>/.agents/skills/,
+ * file by file. Byte-identical existing files are left alone without prompting; files that
+ * differ prompt for keep/overwrite/append. Returns relative "skillName/path/to/file" labels
+ * in each bucket.
+ *
+ * @param {string} targetFolder
+ * @param {object} [deps]
+ * @param {string} [deps.sourcesDir] - override for the skill source cache root (for tests).
+ * @param {(opts: object) => Promise<string>} [deps.select] - override for @clack/prompts' select (for tests).
+ */
+export async function copySkillsIntoProject(targetFolder, deps = {}) {
+  const sourcesDir = deps.sourcesDir ?? SOURCES_DIR;
+  const select = deps.select ?? p.select;
+
   const destRoot = path.join(targetFolder, ".agents", "skills");
   fs.mkdirSync(destRoot, { recursive: true });
 
-  const results = { copied: [], skipped: [], overwritten: [] };
+  const results = { copied: [], skipped: [], overwritten: [], appended: [] };
 
   for (const source of SKILL_SOURCES) {
-    const skillsDir = path.join(cacheDirFor(source.name), "skills");
+    const skillsDir = path.join(cacheDirFor(source.name, sourcesDir), "skills");
     if (!fs.existsSync(skillsDir)) continue;
 
     for (const skillName of fs.readdirSync(skillsDir)) {
-      const src = path.join(skillsDir, skillName);
-      if (!fs.statSync(src).isDirectory()) continue;
+      const skillSrcDir = path.join(skillsDir, skillName);
+      if (!fs.statSync(skillSrcDir).isDirectory()) continue;
 
-      const dest = path.join(destRoot, skillName);
-      if (fs.existsSync(dest)) {
-        const choice = await p.select({
-          message: `.agents/skills/${skillName} already exists. What do you want to do?`,
+      for (const relFile of listFilesRecursive(skillSrcDir)) {
+        const srcFile = path.join(skillSrcDir, relFile);
+        const destFile = path.join(destRoot, skillName, relFile);
+        const label = path.posix.join(skillName, relFile);
+        const content = fs.readFileSync(srcFile, "utf8");
+
+        if (!fs.existsSync(destFile)) {
+          fs.mkdirSync(path.dirname(destFile), { recursive: true });
+          fs.writeFileSync(destFile, content);
+          results.copied.push(label);
+          continue;
+        }
+
+        const existing = fs.readFileSync(destFile, "utf8");
+        if (existing === content) {
+          results.skipped.push(label);
+          continue;
+        }
+
+        const choice = await select({
+          message: `.agents/skills/${label} already exists and differs from the generated version. What do you want to do?`,
           options: [
             { value: "keep", label: "Keep existing (skip)" },
             { value: "overwrite", label: "Overwrite from source" },
+            { value: "append", label: "Append generated content to the existing file" },
           ],
         });
+
         if (p.isCancel(choice) || choice === "keep") {
-          results.skipped.push(skillName);
+          results.skipped.push(label);
           continue;
         }
-        fs.rmSync(dest, { recursive: true, force: true });
-        fs.cpSync(src, dest, { recursive: true });
-        results.overwritten.push(skillName);
-        continue;
-      }
 
-      fs.cpSync(src, dest, { recursive: true });
-      results.copied.push(skillName);
+        if (choice === "append") {
+          fs.writeFileSync(destFile, existing + content);
+          results.appended.push(label);
+          continue;
+        }
+
+        fs.writeFileSync(destFile, content);
+        results.overwritten.push(label);
+      }
     }
   }
 

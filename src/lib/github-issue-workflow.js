@@ -16,8 +16,14 @@ const HOOK_CONTEXT =
   "to create GitHub issues (epics + linked stories) from the approved stories doc. Use github-issue-start " +
   "right before beginning implementation on a tracked issue, and github-issue-commit when closing out that work.";
 
+/** Escapes a string for safe embedding inside a PowerShell single-quoted literal. */
+export function escapeForPowerShellSingleQuote(value) {
+  return value.replace(/'/g, "''");
+}
+
 const HOOK_COMMAND =
-  `Write-Output '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"${HOOK_CONTEXT}"}}'`;
+  `Write-Output '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"` +
+  `${escapeForPowerShellSingleQuote(HOOK_CONTEXT)}"}}'`;
 
 /** Copies the Epic/User Story/Bug issue-form templates into <targetFolder>/.github/ISSUE_TEMPLATE/. */
 export async function copyIssueTemplates(targetFolder) {

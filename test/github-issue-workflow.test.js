@@ -7,6 +7,7 @@ import {
   copyIssueTemplates,
   copyIssueWorkflowSkills,
   addGithubWorkflowHook,
+  escapeForPowerShellSingleQuote,
 } from "../src/lib/github-issue-workflow.js";
 
 function makeScratchDir() {
@@ -41,6 +42,12 @@ test("addGithubWorkflowHook adds a SessionStart hook to a fresh settings.json", 
   const settings = JSON.parse(fs.readFileSync(path.join(dir, ".claude", "settings.json"), "utf8"));
   assert.equal(settings.hooks.SessionStart.length, 1);
   assert.match(settings.hooks.SessionStart[0].hooks[0].command, /github-issue-sync/);
+});
+
+test("escapeForPowerShellSingleQuote doubles embedded single quotes", () => {
+  assert.equal(escapeForPowerShellSingleQuote("doesn't"), "doesn''t");
+  assert.equal(escapeForPowerShellSingleQuote("no quotes here"), "no quotes here");
+  assert.equal(escapeForPowerShellSingleQuote("it's, isn't, won't"), "it''s, isn''t, won''t");
 });
 
 test("addGithubWorkflowHook is idempotent and preserves existing settings", async () => {

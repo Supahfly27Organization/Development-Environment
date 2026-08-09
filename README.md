@@ -49,6 +49,12 @@ For the target folder (defaults to the current directory), this:
 - Detects (and can install) `codebase-memory-mcp`; wires up `.mcp.json` / `.codex/config.toml` /
   `.vscode/mcp.json` with the same MCP server set: `codebase-memory-mcp`, `sonarqube`, `semgrep`,
   `trivy`, `github`.
+- Detects (and can install) the [CASS Memory System](https://github.com/Dicklesworthstone/cass_memory_system)
+  `cm` CLI (Scoop on Windows, the official install script on macOS/Linux), runs `cm init` if it
+  hasn't been set up yet, and starts `cm serve` in the background so it can be wired into the MCP
+  config above as `cass-memory` (a `type: "url"` server pointing at `http://127.0.0.1:8765/`). For
+  Claude, also adds a `cm reflect` post-session entry to `.claude/hooks.json` for automated
+  procedural-memory learning.
 - Installs the Superpowers + Product Superpowers plugins for Claude Code at **project scope**
   (`--scope project`), so they're active for this repo specifically.
 - Prompts for secrets (`GITHUB_TOKEN`, `SONAR_TOKEN`) and writes `.env` (already covered by

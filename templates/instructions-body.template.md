@@ -9,10 +9,10 @@
   - Exempt from the above: PRDs, discovery docs, story lists, roadmaps, brainstorming option analysis, User Review Gate content, and any skill-defined output format (e.g. ReportFindings). Size these to the content, not to brevity.
 - When implementing, write code directly — skip preamble.
 - Do not re-read files already in context.
-- Read only files directly needed for the current task; never explore the codebase broadly before starting — prefer querying codebase-memory-mcp over generic file search for navigation once this repo is indexed (see `docs/claude/07_KNOWLEDGE_TOOLS.md`).
+- Read only files directly needed for the current task; never explore the codebase broadly before starting — prefer querying codebase-memory-mcp over generic file search for navigation once this repo is indexed (see `docs/claude/KNOWLEDGE_TOOLS.md`).
 - Only invoke Superpowers / Product Superpowers skills when explicitly named (slash command or direct request). Do not speculatively invoke skills based on topical relevance.
 - Before invoking a plugin skill by name, confirm it's present in the current skill listing — if it's missing, stop and ask whether to enable it (`claude plugin enable <plugin>@<marketplace>` then `/clear`) rather than manually reproducing its process as a workaround.
-- Knowledge/navigation/editing tool policy (Codebase Memory MCP, serena, file-read discipline): see `docs/claude/07_KNOWLEDGE_TOOLS.md`.
+- Knowledge/navigation/editing tool policy (Codebase Memory MCP, serena, file-read discipline): see `docs/claude/KNOWLEDGE_TOOLS.md`.
 - When dispatching subagents, always pass an explicit model param — never omit it and rely on inheritance. Default to a mid-tier model for implementation/integration work; use a cheap/fast model only for purely mechanical tasks (renames, boilerplate, simple lookups); reserve the most capable model for final/architecture review passes, not general implementation.
 
 ## What is {{PROJECT_NAME}}?
@@ -34,7 +34,7 @@ Tech: {{TECH_STACK}}
 | Add business logic | Relevant module's `CLAUDE.md` → service interface + implementation |
 | Add data access | Relevant module's `CLAUDE.md` → data-access interface + implementation |
 | Frontend page | Frontend app's `CLAUDE.md` → shared types → page file |
-| Security / quality review | `docs/claude/06_SCANNING_TOOLS.md` |
+| Security / quality review | `docs/claude/SCANNING_TOOLS.md` |
 | _(add project-specific rows here as modules are built out)_ | |
 
 ## Security & Quality Scanning
@@ -44,7 +44,7 @@ Three tools, each with a primary purpose:
 - **Semgrep** — source-code security patterns (injection, XSS, auth, secrets in code)
 - **Trivy** — dependency CVEs, Docker images, IaC, secrets in config/repo files
 
-For decision rules, overlap cases, scan order, and token discipline: `docs/claude/06_SCANNING_TOOLS.md`
+For decision rules, overlap cases, scan order, and token discipline: `docs/claude/SCANNING_TOOLS.md`
 
 ## Repo Rules
 
@@ -65,7 +65,7 @@ For decision rules, overlap cases, scan order, and token discipline: `docs/claud
 
 ## Deeper Context (read as needed)
 
-- `docs/claude/04_DOMAIN_MODEL.md` — all entity schemas and DB columns
-- `docs/claude/05_PATTERNS.md` — coding conventions and architectural rules
-- `docs/claude/06_SCANNING_TOOLS.md` — when to use SonarQube, Semgrep, and Trivy
-- `docs/claude/07_KNOWLEDGE_TOOLS.md` — when and how to use Codebase Memory MCP and serena
+- `docs/claude/DOMAIN_MODEL.md` — all entity schemas and DB columns
+- `docs/claude/PATTERNS.md` — coding conventions and architectural rules
+- `docs/claude/SCANNING_TOOLS.md` — when to use SonarQube, Semgrep, and Trivy
+- `docs/claude/KNOWLEDGE_TOOLS.md` — when and how to use Codebase Memory MCP, CASS Memory, and serena

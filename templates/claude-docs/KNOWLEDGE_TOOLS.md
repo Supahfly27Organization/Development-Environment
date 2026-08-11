@@ -66,6 +66,34 @@ Do not immediately start broad file exploration.
 
 ---
 
+# CASS Memory (cass-memory)
+
+Procedural/episodic memory — what past sessions learned, not code structure. Codebase Memory MCP (above) answers "what does the code look like"; CASS Memory answers "what have we learned about working in this codebase."
+
+Automatic — no action needed for the baseline loop:
+
+* Session start: relevant rules/history are recalled automatically.
+* Session end: the `cm reflect --days 1` hook (`.claude/hooks.json`) extracts new rules from the session.
+
+Use explicitly when:
+
+* Starting non-trivial or unfamiliar work — search for relevant prior learnings/anti-patterns before diving in.
+* A correction or outcome happens mid-session — record it immediately (feedback/outcome) rather than waiting for the end-of-session reflect, so it isn't lost if the session is interrupted.
+
+Inspecting what's been learned:
+
+| Where | Shows |
+|---|---|
+| `~/.cass-memory/playbook.yaml` | The learned rules themselves, plain YAML — open directly |
+| `cm ls` | All current rules/bullets |
+| `cm stats` | Health dashboard: counts by scope/state/kind, score distribution, stale/at-risk rules |
+| `cm top [n]` | Most effective rules |
+| `cm why <bulletId>` | Origin/evidence for a specific rule |
+
+This directory is global (`~/.cass-memory/`), shared across every project on the machine — not project-scoped like Codebase Memory MCP's index.
+
+---
+
 # Serena
 
 Not a knowledge source — an editing tool for cross-file-safe changes, backed by a real language server (LSP).
@@ -101,6 +129,7 @@ Architecture docs, ADRs, product specs, and design decisions live under `docs/` 
 | Impact analysis         | Codebase Memory |
 | Bug investigation       | Codebase Memory |
 | Refactoring             | Codebase Memory |
+| Recall prior learnings / anti-patterns | CASS Memory |
 | Rename across files     | Serena |
 | Safe delete (check references first) | Serena |
 | Precise symbol body replacement | Serena |

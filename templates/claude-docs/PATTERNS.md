@@ -1,4 +1,4 @@
-# 05 — Patterns
+# Patterns
 
 <!-- Document this codebase's architectural conventions here as they're established:
      layering rules, repository/service patterns, naming conventions, cross-cutting

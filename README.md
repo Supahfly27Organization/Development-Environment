@@ -275,10 +275,10 @@ Generates the agent instruction layer:
 | File | Role |
 |---|---|
 | `CLAUDE.md` | **Single source of truth** — project name, description, tech stack, working rules |
-| `docs/claude/04_DOMAIN_MODEL.md` | Domain model reference (edit per project) |
-| `docs/claude/05_PATTERNS.md` | Architectural patterns (edit per project) |
-| `docs/claude/06_SCANNING_TOOLS.md` | When and how to invoke each scanning MCP server |
-| `docs/claude/07_KNOWLEDGE_TOOLS.md` | When and how to use memory / knowledge MCPs |
+| `docs/claude/DOMAIN_MODEL.md` | Domain model reference (edit per project) |
+| `docs/claude/PATTERNS.md` | Architectural patterns (edit per project) |
+| `docs/claude/SCANNING_TOOLS.md` | When and how to invoke each scanning MCP server |
+| `docs/claude/KNOWLEDGE_TOOLS.md` | When and how to use memory / knowledge MCPs |
 | `AGENTS.md` | Codex pointer → `CLAUDE.md` |
 | `.github/copilot-instructions.md` | Copilot pointer → `CLAUDE.md` |
 
@@ -351,10 +351,10 @@ Prompts for `GITHUB_TOKEN` and `SONAR_TOKEN`, then writes them to `.env` (alread
 │   └── mcp.json                 # Copilot MCP server config
 ├── docs/
 │   └── claude/
-│       ├── 04_DOMAIN_MODEL.md
-│       ├── 05_PATTERNS.md
-│       ├── 06_SCANNING_TOOLS.md
-│       └── 07_KNOWLEDGE_TOOLS.md
+│       ├── DOMAIN_MODEL.md
+│       ├── PATTERNS.md
+│       ├── SCANNING_TOOLS.md
+│       └── KNOWLEDGE_TOOLS.md
 ├── AGENTS.md                    # Pointer → CLAUDE.md
 ├── CLAUDE.md                    # ← Single source of truth for all agents
 ├── .env                         # Secrets (git-ignored)
@@ -379,7 +379,7 @@ The same server set is written into all three config files (with appropriate for
 | `github` | `stdio` (`docker run github-mcp-server`) | Full GitHub API (issues, PRs, Projects); requires `GITHUB_TOKEN` |
 | `serena` | `stdio` (`uvx serena start-mcp-server`) | LSP-backed cross-file edits: rename symbol, safe delete, replace symbol body, compiler diagnostics |
 
-**Scan priority guidance** (encoded in `docs/claude/06_SCANNING_TOOLS.md`):
+**Scan priority guidance** (encoded in `docs/claude/SCANNING_TOOLS.md`):
 
 | Scenario | Primary tool | Also use |
 |---|---|---|

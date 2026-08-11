@@ -7,10 +7,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const BODY_TEMPLATE_PATH = path.join(__dirname, "..", "..", "templates", "instructions-body.template.md");
 const CLAUDE_DOCS_DIR = path.join(__dirname, "..", "..", "templates", "claude-docs");
 const CLAUDE_DOCS_FILES = [
-  "04_DOMAIN_MODEL.md",
-  "05_PATTERNS.md",
-  "06_SCANNING_TOOLS.md",
-  "07_KNOWLEDGE_TOOLS.md",
+  "DOMAIN_MODEL.md",
+  "PATTERNS.md",
+  "SCANNING_TOOLS.md",
+  "KNOWLEDGE_TOOLS.md",
 ];
 
 function renderBody({ projectName, description, techStack }) {

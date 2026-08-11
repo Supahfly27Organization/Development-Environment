@@ -1,4 +1,4 @@
-# 04 — Domain Model
+# Domain Model
 
 <!-- Document every entity/aggregate here as the schema takes shape: primary key, fields
      with types and DB column notes, relationships (FK), unique indexes, and any

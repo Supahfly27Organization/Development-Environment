@@ -201,21 +201,27 @@ sequenceDiagram
 
     rect rgb(245, 235, 255)
         Note over Dev,GH: ── PHASE 5: GitHub Issue Workflow ──
-        Dev->>GH: Create issue via Epic / User Story / Bug form template
+        Dev->>GH: (alternative entry point, esp. for bugs) Create issue directly via Epic / User Story / Bug form template
+        Claude->>Dev: Stories doc approved (product-superpowers User Review Gate)
+        Claude->>Dev: [github-issue-sync skill] "Want me to create these as GitHub issues?"
+        Dev->>Claude: Confirms
+        Claude->>GH: gh project list — use the existing Project as-is, or create one
+        alt No Project existed yet
+            Claude->>GH: Create Project, apply board template: Backlog / Ready / In Progress / Waiting to review / Done
+        end
+        Claude->>GH: Map epics/stories → GitHub issues (Epic + Story types), one confirmation per issue
+        Claude->>GH: Link stories as sub-issues under their epic
+        Claude->>GH: Sync Priority / Size to Project board fields
+        GH-->>Claude: Issue URLs returned
+        Claude->>Dev: Append GitHub Issues section to stories doc, summarize
         Dev->>Claude: "Start work on issue #N"
         Claude->>GH: [github-issue-start skill] Move issue Project Status → In progress
         GH-->>Claude: Status updated
         Claude->>Dev: Implement feature (phases 3 + 4 above)
         Dev->>Claude: "Commit this work"
         Claude->>GH: [github-issue-commit skill] git commit with "(#N)" suffix
-        Claude->>GH: Move issue Project Status → In review
+        Claude->>GH: Move issue Project Status → Waiting to review
         GH-->>Claude: Commit linked to issue timeline
-        Dev->>Claude: "Create the GitHub issues from the approved stories doc"
-        Claude->>GH: [github-issue-sync skill] Map epics/stories → GitHub issues (Epic + Story types)
-        Claude->>GH: Link stories as sub-issues under their epic
-        Claude->>GH: Sync Priority / Size to Project board fields
-        GH-->>Claude: Issue URLs returned
-        Claude->>Dev: Append GitHub Issues section to stories doc, summarize
     end
 
     rect rgb(235, 255, 248)
@@ -323,9 +329,9 @@ If you opt in:
 | `.github/ISSUE_TEMPLATE/epic.yml` | Epic issue form |
 | `.github/ISSUE_TEMPLATE/user_story.yml` | User story form |
 | `.github/ISSUE_TEMPLATE/bug.yml` | Bug report form |
-| `.claude/skills/github-issue-sync/` | Maps approved stories doc → GitHub issues (epic + sub-issue links, Priority/Size field sync) |
+| `.claude/skills/github-issue-sync/` | Asks whether to sync approved stories to GitHub; if yes, maps them to issues (epic + sub-issue links, Priority/Size field sync), creating the Project from this project's board template only if none exists yet |
 | `.claude/skills/github-issue-start/` | Moves issue to "In progress" before work begins |
-| `.claude/skills/github-issue-commit/` | Commits with `(#N)` suffix; moves issue to "In review" |
+| `.claude/skills/github-issue-commit/` | Commits with `(#N)` suffix; moves issue to "Waiting to review" |
 | SessionStart hook | Auto-runs the sync skill at the start of each Claude Code session |
 
 ### 2.11 Secrets
@@ -408,9 +414,9 @@ Additionally, if the GitHub Issue Workflow is enabled, three Claude-only skills 
 
 | Skill | Trigger | What it does |
 |---|---|---|
-| `github-issue-sync` | Explicit (after story approval) | Maps an approved stories doc to GitHub issues — creates Epic + Story issue types, links sub-issues, syncs Priority/Size Project board fields |
+| `github-issue-sync` | After story approval — asks first whether to sync at all | Maps an approved stories doc to GitHub issues — creates Epic + Story issue types, links sub-issues, syncs Priority/Size Project board fields; creates the Project from this project's board template only if none exists yet |
 | `github-issue-start` | Before implementation | Moves the linked issue's Project board status to *In progress* |
-| `github-issue-commit` | After implementation | Commits with a `(#N)` suffix (no auto-close keywords); moves issue status to *In review* |
+| `github-issue-commit` | After implementation | Commits with a `(#N)` suffix (no auto-close keywords); moves issue status to *Waiting to review* |
 
 ---
 
@@ -419,16 +425,17 @@ Additionally, if the GitHub Issue Workflow is enabled, three Claude-only skills 
 When enabled, `aeco init` sets up a lightweight, fully-tracked development loop:
 
 ```
-Issue created (epic / user story / bug form)
-  → aeco init registers SessionStart hook
-  → Claude session starts → github-issue-sync fires (after stories are approved)
+Issue created (epic / user story / bug form, or synced from an approved stories doc)
+  → aeco init registers a SessionStart hook that reminds Claude to use these skills
+  → Stories doc explicitly approved by the user → github-issue-sync asks whether to sync to GitHub (not automatic)
   → Developer begins work → github-issue-start moves issue to "In progress"
-  → Work complete → github-issue-commit writes linked commit + moves to "In review"
+  → Work complete → github-issue-commit writes linked commit + moves to "Waiting to review"
   → cm reflect captures procedural memory for future sessions
 ```
 
 The `github-issue-sync` skill handles the full GitHub Projects integration:
-- Detects or creates the target Project board.
+- Detects the target Project board if one already exists and uses it as-is.
+- If none exists, creates one and applies this project's board template: a `Status` field with `Backlog`, `Ready`, `In Progress`, `Waiting to review`, `Done` (replacing GitHub's default `Todo`/`In Progress`/`Done`) — this template is only ever applied to a Project created in that same step, never retrofitted onto an existing board.
 - Creates/fixes `Priority` and `Size` single-select fields if missing.
 - Confirms each issue creation individually before submitting.
 - Appends a `## GitHub Issues` mapping section back to the stories doc.

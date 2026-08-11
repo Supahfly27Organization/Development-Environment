@@ -5,7 +5,7 @@ description: Use right before beginning implementation work on a tracked GitHub 
 
 # GitHub Issue Start
 
-When Superpowers begins implementing a tracked GitHub issue, the board should reflect that work has started — before any code changes.
+When Superpowers begins implementing a tracked GitHub issue, the board should reflect that work has started — before any code changes. This moves the issue to "In progress" regardless of its current status (typically "Ready", but this skill doesn't check — it just sets the new value).
 
 **Announce at start:** "I'm using the github-issue-start skill to move #N to In progress."
 

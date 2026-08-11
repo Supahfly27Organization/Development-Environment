@@ -1,28 +1,35 @@
 ---
 name: github-issue-sync
-description: Use immediately after the product-superpowers user-story-writing skill's User Review Gate has been explicitly approved by the user. Converts the approved epics/stories doc into GitHub issues (native Epic/Story issue types), one confirmation per issue.
+description: Use immediately after the product-superpowers user-story-writing skill's User Review Gate has been explicitly approved by the user. First asks whether to sync the approved stories to GitHub at all; only if confirmed, converts them into GitHub issues (native Epic/Story issue types), one confirmation per issue.
 ---
 
 # GitHub Issue Sync
 
 Turn an approved `docs/product-superpowers/stories/*.md` document into GitHub issues, with epics as parent issues and stories as linked sub-issues.
 
-**Announce at start:** "I'm using the github-issue-sync skill to map the approved stories to GitHub issues."
+**Announce at start:** "The stories doc is approved — want me to create these as GitHub issues?"
 
 <HARD-GATE>
-Do NOT invoke this skill until the user has explicitly approved the stories document (a reply like "approved", "looks good", "yes create them" after the User Review Gate prompt in user-story-writing). A stories doc merely being *written* is not approval.
+Do NOT invoke the issue-creation steps below (Step 1 onward) until:
+1. The user has explicitly approved the stories document (a reply like "approved", "looks good", "yes create them" after the User Review Gate prompt in user-story-writing) — a stories doc merely being *written* is not approval, and
+2. The user has separately confirmed they want it synced to GitHub (Step 0) — approving the story content is not the same as agreeing to create GitHub issues from it.
 </HARD-GATE>
 
 ## Checklist
 
+0. Ask whether to sync the approved stories to GitHub; stop here if declined
 1. Resolve `owner`/`repo` from `git remote get-url origin`
 2. Fetch org issue types via `mcp__github__list_issue_types`
 3. Map each epic and story to a type (see Type Mapping)
-4. Resolve the target Project board and its `Priority`/`Size` fields (see Step 3b)
+4. Resolve the target Project board, creating it from this project's board template only if none exists yet, and its `Priority`/`Size` fields (see Step 3b)
 5. For each epic: propose the mapped issue, wait for per-issue confirmation, create it
 6. For each story under that epic: propose the mapped issue, wait for per-issue confirmation, create it, link it under the epic, then sync its `Priority`/`Size` Project fields (see Step 5b)
 7. Append a "GitHub Issues" section to the stories doc mapping story titles → issue URLs
 8. Summarize what was created and what was skipped, including any Project field syncs that failed
+
+## Step 0: Confirm GitHub sync
+
+Right after the stories doc's User Review Gate is approved, ask the user whether they want these stories synced to GitHub at all (see Announce line above). If they decline, stop here — do not create anything and do not proceed to Step 1. If they agree, continue.
 
 ## Step 1: Resolve owner/repo
 
@@ -43,11 +50,16 @@ Call `mcp__github__list_issue_types` for the org.
 
 Stories carry `Priority` and `Estimate` values in their body (Step 4). To keep the org's Project board queryable, sync those values into the board's `Priority` and `Size` single-select fields once each story issue is created.
 
-1. `gh project list --owner <org>` — if exactly one open Project exists, use it. If multiple exist, ask which one to use. If **none** exist, ask the user whether to create one now:
-   - If yes, ask for a title for the new Project, then create it with `gh project create --owner <org> --title "<title>"` and use the returned project for the rest of this run.
+1. `gh project list --owner <org>` — if exactly one open Project exists, use it **as-is** (do not touch its `Status` field options — the board template in step 2 below only ever applies to a Project created in this same step, never to a pre-existing one). If multiple exist, ask which one to use. If **none** exist, ask the user whether to create one now:
+   - If yes, ask for a title for the new Project, create it with `gh project create --owner <org> --title "<title>"`, then apply this project's board template (step 2) before creating any issues.
    - If no, ask whether to skip field sync for this run instead (issue creation can still proceed without a Project).
-2. `gh project field-list <number> --owner <org>` — find fields named `Priority` and `Size` (case-insensitive; `Size` is GitHub's default name for a T-shirt-size field, `Estimate` may instead be a plain number field for story points — don't confuse the two). If either field is missing (including on a Project you just created), or is a `SINGLE_SELECT` field with **zero options**, create/fix it: `gh project field-create <number> --owner <org> --name "Priority" --data-type SINGLE_SELECT --single-select-options "Must Have,Should Have,Could Have,Wont Have"` (match the options used in `.github/ISSUE_TEMPLATE/user_story.yml`; for `Size` use `XS,S,M,L,XL`). If the field already exists but has zero options, do not try to add options with `updateProjectV2Field` — it fails with "Only custom fields can be updated" on default-template fields. Instead delete and recreate it: `gh project field-delete --id <field-id>` then run the `field-create` command above.
-3. Cache the project id, both field ids, and each field's option-name → option-id map for the rest of this run — don't re-query per issue.
+2. **Only immediately after creating a brand-new Project in step 1** — never on a pre-existing one — replace GitHub's default `Status` field (`Todo`/`In Progress`/`Done`) with this project's board template: `Backlog, Ready, In Progress, Waiting to review, Done`.
+   - `gh project field-list <number> --owner <org>` to find the default `Status` field's id.
+   - `gh project field-delete --id <status-field-id>` — the default field's options can't be replaced via `updateProjectV2Field` (same "Only custom fields can be updated" restriction as `Priority`/`Size` in step 3), so delete and recreate it.
+   - `gh project field-create <number> --owner <org> --name "Status" --data-type SINGLE_SELECT --single-select-options "Backlog,Ready,In Progress,Waiting to review,Done"`.
+   - New issues land on whichever option is first (`Backlog`) via GitHub's "auto-add to project" default — no explicit action needed to put them there.
+3. `gh project field-list <number> --owner <org>` — find fields named `Priority` and `Size` (case-insensitive; `Size` is GitHub's default name for a T-shirt-size field, `Estimate` may instead be a plain number field for story points — don't confuse the two). If either field is missing (including on a Project you just created), or is a `SINGLE_SELECT` field with **zero options**, create/fix it: `gh project field-create <number> --owner <org> --name "Priority" --data-type SINGLE_SELECT --single-select-options "Must Have,Should Have,Could Have,Won't Have"` (match the options used in `.github/ISSUE_TEMPLATE/user_story.yml`; for `Size` use `XS,S,M,L,XL`). If the field already exists but has zero options, do not try to add options with `updateProjectV2Field` — it fails with "Only custom fields can be updated" on default-template fields. Instead delete and recreate it: `gh project field-delete --id <field-id>` then run the `field-create` command above.
+4. Cache the project id, the `Status`/`Priority`/`Size` field ids, and each field's option-name → option-id map for the rest of this run — don't re-query per issue.
 
 **Auth note:** this org's `gh` auth may have a stale/invalid `GITHUB_TOKEN` env var cached in the current shell process even after it's fixed elsewhere (a sandboxing quirk, not a real auth problem). If `gh` commands here fail with "Bad credentials" while `gh auth status` in a fresh terminal looks fine, prefix commands with `env -u GITHUB_TOKEN` rather than troubleshooting auth further.
 

@@ -14,6 +14,10 @@
 - Before invoking a plugin skill by name, confirm it's present in the current skill listing — if it's missing, stop and ask whether to enable it (`claude plugin enable <plugin>@<marketplace>` then `/clear`) rather than manually reproducing its process as a workaround.
 - Knowledge/navigation/editing tool policy (Codebase Memory MCP, serena, file-read discipline): see `docs/claude/KNOWLEDGE_TOOLS.md`.
 - When dispatching subagents, always pass an explicit model param — never omit it and rely on inheritance. Default to a mid-tier model for implementation/integration work; use a cheap/fast model only for purely mechanical tasks (renames, boilerplate, simple lookups); reserve the most capable model for final/architecture review passes, not general implementation.
+- Module documentation — keep each project/module's `CLAUDE.md` accurate as part of the same change that touches it (add, update, or delete content — it should never just accumulate):
+  - Architecture: structure, entry points, key dependencies.
+  - Non-obvious decisions: why something is built the way it is, invariants, gotchas — skip anything already obvious from reading the code.
+  - Playbook (when the module has recurring multi-step procedures, e.g. "how to add an endpoint here"): a terse `## Playbook` section with the steps. This is module-scoped and separate from CASS Memory's auto-learned playbook (`docs/claude/KNOWLEDGE_TOOLS.md`) — don't conflate the two.
 
 ## What is {{PROJECT_NAME}}?
 
@@ -34,6 +38,7 @@ Tech: {{TECH_STACK}}
 | Add business logic | Relevant module's `CLAUDE.md` → service interface + implementation |
 | Add data access | Relevant module's `CLAUDE.md` → data-access interface + implementation |
 | Frontend page | Frontend app's `CLAUDE.md` → shared types → page file |
+| Add new project / module | Create/update its `CLAUDE.md` (architecture + playbook, keep in sync — see Working Rules) |
 | Security / quality review | `docs/claude/SCANNING_TOOLS.md` |
 | _(add project-specific rows here as modules are built out)_ | |
 

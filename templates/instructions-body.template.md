@@ -51,6 +51,10 @@ Three tools, each with a primary purpose:
 
 For decision rules, overlap cases, scan order, and token discipline: `docs/claude/SCANNING_TOOLS.md`
 
+## GitHub Integration
+
+The `github` MCP server (`mcp__github__*`) is always configured — general GitHub operations (issues, PRs, review comments, code/issue search) are available regardless of which optional features were enabled during `aeco init`. If `.claude/skills/github-issue-{start,commit,sync}/` exist (only added when the GitHub Issue Workflow was enabled), use those dedicated skills for the tracked-issue workflow instead of hand-rolling the same steps.
+
 ## Repo Rules
 
 1. Never read `{{PROJECT_NAME}}.Data/Migrations/` (or this project's equivalent migrations folder) unless the task is explicitly about migrations.

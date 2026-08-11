@@ -70,14 +70,13 @@ Do not immediately start broad file exploration.
 
 Procedural/episodic memory — what past sessions learned, not code structure. Codebase Memory MCP (above) answers "what does the code look like"; CASS Memory answers "what have we learned about working in this codebase."
 
-Automatic — no action needed for the baseline loop:
+Automatic — no action needed:
 
-* Session start: relevant rules/history are recalled automatically.
 * Session end: the `cm reflect --days 1` hook (`.claude/hooks.json`) extracts new rules from the session.
 
-Use explicitly when:
+Not automatic — recall only happens when explicitly requested:
 
-* Starting non-trivial or unfamiliar work — search for relevant prior learnings/anti-patterns before diving in.
+* Before starting non-trivial or unfamiliar work, call `cm context "<task>"` (or the equivalent MCP tool) to pull relevant rules/history — nothing is recalled at session start on its own.
 * A correction or outcome happens mid-session — record it immediately (feedback/outcome) rather than waiting for the end-of-session reflect, so it isn't lost if the session is interrupted.
 
 Inspecting what's been learned:

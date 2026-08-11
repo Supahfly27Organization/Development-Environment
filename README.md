@@ -54,7 +54,7 @@ The result is a project where:
 |---|---|---|
 | **Node.js ≥ 18** | `aeco` itself | [nodejs.org](https://nodejs.org) |
 | **Git** | `aeco init` (git init, skill cloning) | [git-scm.com](https://git-scm.com) |
-| **Docker Desktop** | SonarQube, Semgrep, Trivy MCP servers | [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop/) |
+| **Docker Desktop** | SonarQube, Semgrep, Trivy MCP servers, and the `github` MCP server (runs via `docker run --rm` per invocation) | [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop/) |
 | **Claude Code CLI** (`claude`) | Plugin installation & marketplace registration | [claude.ai/code](https://claude.ai/code) *(optional — skipped gracefully if absent)* |
 | **`uvx` / uv** | Serena MCP server (code intelligence) | [astral.sh/uv](https://github.com/astral-sh/uv) |
 | **CASS Memory System** (`cm`) | Procedural memory MCP | Auto-installed by `aeco init` |
@@ -176,8 +176,9 @@ sequenceDiagram
     rect rgb(255, 248, 230)
         Note over Dev,Serena: ── PHASE 3: Daily Development Session ──
         Dev->>Claude: Open Claude Code in project
-        Claude->>CASS: [SessionStart hook] github-issue-sync skill fires automatically
-        CASS-->>Claude: Recalled procedural memory from previous sessions
+        Claude->>Claude: [SessionStart hook] reminder injected to use github-issue-sync/-start/-commit at the right points (if GitHub Issue Workflow enabled)
+        Claude->>CASS: cm context "<task>" (agent-initiated, before non-trivial work — not automatic)
+        CASS-->>Claude: Relevant rules/history for the task
         Claude->>CBM: search_graph / get_code_snippet (codebase navigation)
         CBM-->>Claude: Symbol definitions, call chains, architecture map
         Claude->>Serena: rename_symbol / safe_delete_symbol / replace_symbol_body (cross-file edits)
@@ -372,7 +373,7 @@ The same server set is written into all three config files (with appropriate for
 | Server | Transport | Purpose |
 |---|---|---|
 | `codebase-memory-mcp` | `stdio` (local binary) | Indexes and searches the current codebase; preferred over grep/glob for symbol lookup, call chains, and architecture discovery |
-| `cass-memory` | `url` (`http://127.0.0.1:8765/`) | CASS procedural + episodic memory; recalled at session start, committed at session end via `cm reflect` |
+| `cass-memory` | `url` (`http://127.0.0.1:8765/`) | CASS procedural + episodic memory; the agent explicitly calls `cm context "<task>"` before non-trivial work (not automatic), learnings committed at session end via the `cm reflect` post-session hook |
 | `sonarqube` | `stdio` (`npx sonarqube-api-mcp`) | Code quality, bugs, complexity, tech debt; requires `SONAR_TOKEN` |
 | `semgrep` | `stdio` (`docker exec semgrep-mcp`) | Source-code security scanning: injection, XSS, auth mistakes, secrets in code |
 | `trivy` | `stdio` (`docker exec trivy-mcp`) | Dependency CVEs, Docker image vulnerabilities, IaC and config secrets |
@@ -447,13 +448,15 @@ Secrets are stored only in `.env` at the project root. This file is added to `.g
 
 ## File Conflict Policy
 
-Every file written by `aeco` follows this rule consistently:
+Every file written by `aeco` shares the same first two rules — never silently clobber, never re-prompt for something unchanged — but the resolution options on conflict differ by category:
 
 | Situation | Action |
 |---|---|
 | File does not exist | Create it |
 | File exists and is **byte-identical** | No-op (silent) |
-| File exists and **differs** | Prompt — keep / overwrite / append |
+| Most managed files differ (`CLAUDE.md`, `docs/claude/*`, `.mcp.json`, `.vscode/mcp.json`, `tools-docker-compose.yml`, issue templates/skills) | Prompt — keep / overwrite / **show a short diff** |
+| `.agents/skills/` files differ | Prompt — keep / overwrite / **append generated content** |
+| `.codex/config.toml` | No prompt — MCP server entries are merged into the existing TOML automatically |
 
 This makes both `aeco machine-setup` and `aeco init` safe to re-run without clobbering customisations.
 
@@ -469,8 +472,14 @@ Uses Node's built-in test runner (no extra dependencies). The suite covers:
 
 - MCP server config renderers (`toClaudeMcpJson`, `toCodexMcpServersTable`, `toVscodeMcpJson`)
 - `.gitignore` merge logic
-- `writeManaged` create / no-op paths
-- `CLAUDE.md`-canonical instruction file generation
+- `writeManaged` create / no-op / overwrite / keep paths (generic file conflict resolution)
+- `CLAUDE.md`-canonical instruction file generation, including the `docs/claude/` reference docs
+- CASS Memory System detection/install/init/serve lifecycle (`cass-memory-system.test.js`)
+- `codebase-memory-mcp` detection/install (`codebase-memory-mcp.test.js`)
+- `.codex/config.toml` merge logic (`codex-config.test.js`)
+- Docker tools-stack compose file writing and running/declared-service detection (`docker-stack.test.js`)
+- GitHub Issue Workflow template/skill copying and hook wiring (`github-issue-workflow.test.js`)
+- `.agents/skills/` copy logic, including the keep/overwrite/append conflict prompt (`skills.test.js`)
 
 **Not covered by automated tests:** the Claude Code plugin-detection logic (`projectPluginsInstalled`) shells out to the real `claude` CLI and is verified manually — it is an integration point with an external tool.
 

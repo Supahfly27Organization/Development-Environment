@@ -47,18 +47,6 @@ services:
     networks:
       - mcp-net
 
-  trivy:
-    image: aquasec/trivy:latest
-    container_name: trivy
-    volumes:
-      - {{PROJECTS_ROOT}}:/workspace
-      - ./data/trivy_cache:/root/.cache/trivy
-    working_dir: /workspace
-    entrypoint: ["sleep"]
-    command: ["infinity"]
-    networks:
-      - mcp-net
-
   trivy-mcp:
     image: aquasec/trivy:latest
     container_name: trivy-mcp

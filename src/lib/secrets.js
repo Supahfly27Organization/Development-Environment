@@ -7,8 +7,12 @@ const WANTED_SECRETS = [
   { key: "SONAR_TOKEN", message: "SonarQube token (used by the sonarqube MCP server)" },
 ];
 
-/** Prompts for any missing secrets and writes/updates `.env` at the project root. */
-export async function collectAndWriteSecrets(targetFolder, { wantsSecrets }) {
+/**
+ * Prompts for any missing secrets and writes/updates `.env` at the project root.
+ * @param {Record<string, string>} [prefilled] - values already obtained automatically
+ *        (e.g. an auto-generated SONAR_TOKEN); written without prompting.
+ */
+export async function collectAndWriteSecrets(targetFolder, { wantsSecrets }, prefilled = {}) {
   if (!wantsSecrets) {
     return { written: false };
   }
@@ -27,6 +31,11 @@ export async function collectAndWriteSecrets(targetFolder, { wantsSecrets }) {
 
   for (const { key, message } of WANTED_SECRETS) {
     if (existingKeys.has(key)) continue;
+    if (prefilled[key]) {
+      lines.push(`${key}=${prefilled[key]}`);
+      added++;
+      continue;
+    }
     const value = await p.text({ message: `${message} (leave blank to fill in later)` });
     if (p.isCancel(value)) {
       p.cancel("Cancelled.");

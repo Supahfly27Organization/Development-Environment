@@ -46,6 +46,8 @@ import {
   ensureToolsComposeFile,
   toolsStackFullyRunning,
   startToolsStack,
+  waitForSonarQubeReady,
+  generateSonarToken,
 } from "../lib/docker-stack.js";
 
 function gitInitialized(dir) {
@@ -157,6 +159,7 @@ export async function runInit({ targetFolder: cliTarget }) {
   track(summary, ".gitignore", gitignoreResult.status);
 
   // 5. Project-local Docker tools stack (sonarqube/semgrep/trivy) - set up before wiring MCP config below
+  let sonarToken = null;
   if (dockerAvailable()) {
     const toolsCompose = await ensureToolsComposeFile(targetFolder);
     track(summary, "tools-docker-compose.yml", toolsCompose.status);
@@ -166,6 +169,26 @@ export async function runInit({ targetFolder: cliTarget }) {
     } else {
       startToolsStack(toolsCompose.path);
       summary.created.push("mcp-tools Docker stack started (sonarqube/semgrep/trivy)");
+    }
+
+    const sonarSpinner = p.spinner();
+    sonarSpinner.start("Waiting for SonarQube to finish starting so a token can be generated...");
+    const sonarReady = await waitForSonarQubeReady();
+    if (sonarReady) {
+      sonarToken = await generateSonarToken(`aeco-${answers.projectName}`);
+      sonarSpinner.stop(
+        sonarToken ? "SonarQube token generated automatically" : "SonarQube is up, but token generation failed"
+      );
+      if (!sonarToken) {
+        summary.manual.push(
+          "Couldn't auto-generate a SonarQube token — create one at http://localhost:9000/account/security and add it to .env as SONAR_TOKEN."
+        );
+      }
+    } else {
+      sonarSpinner.stop("SonarQube didn't come up in time");
+      summary.manual.push(
+        "SonarQube didn't become ready in time to auto-generate a token — once it's up, create one at http://localhost:9000/account/security and add it to .env as SONAR_TOKEN."
+      );
     }
   } else {
     summary.manual.push(
@@ -309,7 +332,11 @@ export async function runInit({ targetFolder: cliTarget }) {
   }
 
   // 8. secrets
-  const secretsResult = await collectAndWriteSecrets(targetFolder, answers);
+  const secretsResult = await collectAndWriteSecrets(
+    targetFolder,
+    answers,
+    sonarToken ? { SONAR_TOKEN: sonarToken } : {}
+  );
   if (secretsResult.written) summary.created.push(".env");
 
   printSummary(summary);

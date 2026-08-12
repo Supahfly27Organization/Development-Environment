@@ -160,6 +160,7 @@ sequenceDiagram
         CLI->>Dev: Merge .gitignore
         CLI->>Docker: Write tools-docker-compose.yml (project-local, same container names — no duplicates)
         CLI->>Docker: Start tools stack if not already running
+        CLI->>Docker: Wait for SonarQube, auto-generate SONAR_TOKEN via its API (admin/admin)
         CLI->>CBM: Detect / install codebase-memory-mcp
         CLI->>CASS: Detect / install cm, cm init, cm serve (background)
         CLI->>Dev: Write .mcp.json (Claude), .codex/config.toml (Codex), .vscode/mcp.json (Copilot)
@@ -169,7 +170,7 @@ sequenceDiagram
         CLI->>CASS: Register cm reflect hook → .claude/hooks.json
         CLI->>Dev: (optional) Write .github/ISSUE_TEMPLATE/ (epic, user_story, bug, task)
         CLI->>Dev: (optional) Write .claude/skills/ (github-issue-sync, -start, -commit)
-        CLI->>Dev: Write .env (GITHUB_TOKEN, SONAR_TOKEN)
+        CLI->>Dev: Write .env (GITHUB_TOKEN prompted, SONAR_TOKEN auto-generated)
         CLI->>Dev: Print summary (created / skipped / manual follow-up)
     end
 
@@ -336,7 +337,7 @@ If you opt in:
 | SessionStart hook | Auto-runs the sync skill at the start of each Claude Code session |
 
 ### 2.11 Secrets
-Prompts for `GITHUB_TOKEN` and `SONAR_TOKEN`, then writes them to `.env` (already covered by `.gitignore`).
+Prompts for `GITHUB_TOKEN`. `SONAR_TOKEN` is generated automatically once the local SonarQube container reports ready, by calling its Web API with the default `admin`/`admin` credentials (no login/UI step required) — it's only prompted for if that auto-generation fails. Both are written to `.env` (already covered by `.gitignore`).
 
 ---
 
@@ -531,7 +532,7 @@ claude plugin install product-superpowers@product-superpowers-marketplace --scop
 → Run `cm serve` manually. If `cm` is not found, re-run `aeco init` and choose to install it when prompted, or follow the platform-specific install instructions in [Step 2.7](#27-cass-memory-system-cm).
 
 **SonarQube `SONAR_TOKEN` errors**  
-→ Log in to `http://localhost:9000` (default credentials `admin` / `admin` on first run), generate a token, and add `SONAR_TOKEN=<your-token>` to your project's `.env` file.
+→ `aeco init` auto-generates this token via SonarQube's API once the container is ready, so this usually only happens if SonarQube didn't finish starting in time or auto-generation otherwise failed (check the init summary's manual follow-ups). To fix it by hand: log in to `http://localhost:9000` (default credentials `admin` / `admin` on first run), generate a token, and add `SONAR_TOKEN=<your-token>` to your project's `.env` file.
 
 **`gh` commands fail with "Bad credentials" inside a Claude session**  
 → A stale `GITHUB_TOKEN` env var may be cached in the shell process. Prefix the failing command with `env -u GITHUB_TOKEN` as a workaround — this is a known sandboxing quirk documented in the GitHub Issue skills.

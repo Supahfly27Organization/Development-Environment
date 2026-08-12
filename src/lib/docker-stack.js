@@ -115,3 +115,57 @@ export function startToolsStack(composePath) {
     shell: true,
   });
 }
+
+export const SONAR_DEFAULT_HOST_URL = "http://localhost:9000";
+const SONAR_DEFAULT_CREDS = "admin:admin";
+
+/** Polls SonarQube's status endpoint until it reports UP, or gives up after timeoutMs. */
+export async function waitForSonarQubeReady(
+  hostUrl = SONAR_DEFAULT_HOST_URL,
+  { timeoutMs = 120_000, intervalMs = 3000 } = {}
+) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    try {
+      const res = await fetch(`${hostUrl}/api/system/status`);
+      if (res.ok) {
+        const body = await res.json();
+        if (body.status === "UP") return true;
+      }
+    } catch {
+      // Not reachable yet - keep polling until the deadline.
+    }
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+  }
+  return false;
+}
+
+/**
+ * Generates a SonarQube user token via the Web API, authenticating as the default
+ * admin/admin account. The forced password-change screen SonarQube shows on first
+ * UI login doesn't gate the API, so this works even before that password is changed.
+ * Revokes any existing token with the same name first, so re-running is idempotent.
+ */
+export async function generateSonarToken(tokenName, hostUrl = SONAR_DEFAULT_HOST_URL) {
+  const auth = Buffer.from(SONAR_DEFAULT_CREDS).toString("base64");
+  const headers = { Authorization: `Basic ${auth}` };
+
+  await fetch(`${hostUrl}/api/user_tokens/revoke`, {
+    method: "POST",
+    headers,
+    body: new URLSearchParams({ name: tokenName }),
+  }).catch(() => {});
+
+  try {
+    const res = await fetch(`${hostUrl}/api/user_tokens/generate`, {
+      method: "POST",
+      headers,
+      body: new URLSearchParams({ name: tokenName }),
+    });
+    if (!res.ok) return null;
+    const body = await res.json();
+    return body.token ?? null;
+  } catch {
+    return null;
+  }
+}

@@ -14,12 +14,19 @@ function makeScratchDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "aeco-test-"));
 }
 
-test("copyIssueTemplates writes epic/user_story/bug forms under .github/ISSUE_TEMPLATE/", async () => {
+test("copyIssueTemplates writes epic/user_story/bug/task forms under .github/ISSUE_TEMPLATE/", async () => {
   const dir = makeScratchDir();
   const results = await copyIssueTemplates(dir);
-  assert.deepEqual(results, { "epic.yml": "created", "user_story.yml": "created", "bug.yml": "created" });
+  assert.deepEqual(results, {
+    "epic.yml": "created",
+    "user_story.yml": "created",
+    "bug.yml": "created",
+    "task.yml": "created",
+  });
   const epic = fs.readFileSync(path.join(dir, ".github", "ISSUE_TEMPLATE", "epic.yml"), "utf8");
   assert.match(epic, /name: Epic/);
+  const task = fs.readFileSync(path.join(dir, ".github", "ISSUE_TEMPLATE", "task.yml"), "utf8");
+  assert.match(task, /name: Task/);
 });
 
 test("copyIssueWorkflowSkills writes the three SKILL.md files under .claude/skills/", async () => {

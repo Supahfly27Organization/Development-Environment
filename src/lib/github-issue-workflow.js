@@ -8,7 +8,7 @@ const TEMPLATES_ROOT = path.join(__dirname, "..", "..", "templates");
 const ISSUE_TEMPLATES_DIR = path.join(TEMPLATES_ROOT, "github-issue-templates");
 const CLAUDE_SKILLS_DIR = path.join(TEMPLATES_ROOT, "claude-skills");
 
-const ISSUE_TEMPLATE_FILES = ["epic.yml", "user_story.yml", "bug.yml"];
+const ISSUE_TEMPLATE_FILES = ["epic.yml", "user_story.yml", "bug.yml", "task.yml"];
 const SKILL_NAMES = ["github-issue-sync", "github-issue-start", "github-issue-commit"];
 
 const HOOK_CONTEXT =
@@ -25,7 +25,7 @@ const HOOK_COMMAND =
   `Write-Output '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"` +
   `${escapeForPowerShellSingleQuote(HOOK_CONTEXT)}"}}'`;
 
-/** Copies the Epic/User Story/Bug issue-form templates into <targetFolder>/.github/ISSUE_TEMPLATE/. */
+/** Copies the Epic/User Story/Bug/Task issue-form templates into <targetFolder>/.github/ISSUE_TEMPLATE/. */
 export async function copyIssueTemplates(targetFolder) {
   const destDir = path.join(targetFolder, ".github", "ISSUE_TEMPLATE");
   const results = {};

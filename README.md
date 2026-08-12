@@ -167,7 +167,7 @@ sequenceDiagram
         CLI->>Claude: claude plugin install product-superpowers@... --scope project
         CLI->>Dev: Write .claude/settings.json (marketplaces + enabledPlugins)
         CLI->>CASS: Register cm reflect hook → .claude/hooks.json
-        CLI->>Dev: (optional) Write .github/ISSUE_TEMPLATE/ (epic, user_story, bug)
+        CLI->>Dev: (optional) Write .github/ISSUE_TEMPLATE/ (epic, user_story, bug, task)
         CLI->>Dev: (optional) Write .claude/skills/ (github-issue-sync, -start, -commit)
         CLI->>Dev: Write .env (GITHUB_TOKEN, SONAR_TOKEN)
         CLI->>Dev: Print summary (created / skipped / manual follow-up)
@@ -329,6 +329,7 @@ If you opt in:
 | `.github/ISSUE_TEMPLATE/epic.yml` | Epic issue form |
 | `.github/ISSUE_TEMPLATE/user_story.yml` | User story form |
 | `.github/ISSUE_TEMPLATE/bug.yml` | Bug report form |
+| `.github/ISSUE_TEMPLATE/task.yml` | Task issue form |
 | `.claude/skills/github-issue-sync/` | Asks whether to sync approved stories to GitHub; if yes, maps them to issues (epic + sub-issue links, Priority/Size field sync), creating the Project from this project's board template only if none exists yet |
 | `.claude/skills/github-issue-start/` | Moves issue to "In progress" before work begins |
 | `.claude/skills/github-issue-commit/` | Commits with `(#N)` suffix; moves issue to "Waiting to review" |
@@ -353,7 +354,7 @@ Prompts for `GITHUB_TOKEN` and `SONAR_TOKEN`, then writes them to `.env` (alread
 │   └── config.toml              # Codex MCP server config
 ├── .github/
 │   ├── copilot-instructions.md  # Pointer → CLAUDE.md
-│   └── ISSUE_TEMPLATE/          # (optional) epic, user_story, bug forms
+│   └── ISSUE_TEMPLATE/          # (optional) epic, user_story, bug, task forms
 ├── .vscode/
 │   └── mcp.json                 # Copilot MCP server config
 ├── docs/

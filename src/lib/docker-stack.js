@@ -68,9 +68,8 @@ export function stackStatus() {
 /** Writes/updates the project-local tools-docker-compose.yml (sonarqube/semgrep/trivy). */
 export async function ensureToolsComposeFile(targetFolder) {
   const template = fs.readFileSync(TOOLS_TEMPLATE_PATH, "utf8");
-  const rendered = template.replaceAll("{{PROJECT_DIR}}", toComposePath(targetFolder));
   const targetPath = path.join(targetFolder, "tools-docker-compose.yml");
-  const status = await writeManaged(targetPath, rendered);
+  const status = await writeManaged(targetPath, template);
   return { path: targetPath, status };
 }
 

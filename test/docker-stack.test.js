@@ -24,7 +24,7 @@ function withMockedFetch(impl, run) {
   });
 }
 
-test("ensureToolsComposeFile writes tools-docker-compose.yml with the project path substituted", async () => {
+test("ensureToolsComposeFile writes tools-docker-compose.yml bind-mounting the compose file's own directory", async () => {
   const dir = makeScratchDir();
   const result = await ensureToolsComposeFile(dir);
 
@@ -32,8 +32,7 @@ test("ensureToolsComposeFile writes tools-docker-compose.yml with the project pa
   assert.equal(result.path, path.join(dir, "tools-docker-compose.yml"));
 
   const content = fs.readFileSync(result.path, "utf8");
-  assert.ok(!content.includes("{{PROJECT_DIR}}"), "placeholder should be substituted");
-  assert.ok(content.includes(dir.replace(/\\/g, "/")), "should bind-mount the target folder");
+  assert.ok(content.includes(".:/workspace"), "should bind-mount the compose file's directory via a relative path");
   assert.ok(content.includes("container_name: sonarqube"));
 });
 

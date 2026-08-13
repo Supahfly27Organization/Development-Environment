@@ -40,7 +40,7 @@ services:
     image: semgrep/semgrep:latest
     container_name: semgrep-mcp
     volumes:
-      - {{PROJECT_DIR}}:/workspace
+      - .:/workspace
     working_dir: /workspace
     entrypoint: ["sleep"]
     command: ["infinity"]
@@ -51,7 +51,7 @@ services:
     image: aquasec/trivy:latest
     container_name: trivy-mcp
     volumes:
-      - {{PROJECT_DIR}}:/workspace
+      - .:/workspace
       - ./trivy/cache:/root/.cache/trivy
       - ./trivy/plugins:/root/.trivy/plugins
     working_dir: /workspace
